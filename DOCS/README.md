@@ -1,7 +1,7 @@
 # 📚 PROJE DOKÜMANTASYONU
 ## DiyetPro - Diyetisyen Hasta Takip Otomasyonu
 
-**Son Güncelleme:** 17 Ocak 2026  
+**Son Güncelleme:** 28 Ocak 2026  
 **Versiyon:** 2.0 Final
 
 ---
@@ -157,14 +157,5 @@ DiyetisyenOtomasyonu.exe
 11. ✅ **README.md** - Dokümantasyon indeksi (bu dosya)
 12. ✅ **PROJE_RAPORU_BOLUM1-4.md** - Bölüm bazlı raporlar
 
----
-
-## 📞 İLETİŞİM
-
-**Proje Ekibi**  
-**Danışman:** Öğretim Üyesi  
-**Tarih:** 17 Ocak 2026
-
----
 
 © 2026 DiyetPro - Tüm Hakları Saklıdır
