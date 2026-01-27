@@ -18,7 +18,7 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
                 // 1. Doktor ID'sini al (yoksa varsayılan 1)
                 int doctorId = 1;
 
-                // 2. Örnek hastaları oluştur
+                // 2. Örnek hastaları oluştur - 15 hasta
                 var patients = new[]
                 {
                     new { Name = "Ahmet Yılmaz", User = "ahmetyilmaz", Gender = "Erkek", Age = 35, Height = 178.0, Weight = 84.0, Job = LifestyleType.OfficeWorker, Note = "Masa başı çalışan, bel ağrısı şikayeti var." },
@@ -26,7 +26,16 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
                     new { Name = "Mehmet Kaya", User = "mehmetkaya", Gender = "Erkek", Age = 45, Height = 182.0, Weight = 95.0, Job = LifestyleType.OfficeWorker, Note = "Şoför, hareketsiz yaşam." },
                     new { Name = "Zeynep Çelik", User = "zeynepcelik", Gender = "Kadın", Age = 32, Height = 170.0, Weight = 62.0, Job = LifestyleType.HomeMaker, Note = "Ev hanımı, doğum sonrası kilo vermek istiyor." },
                     new { Name = "Can Yıldız", User = "canyildiz", Gender = "Erkek", Age = 22, Height = 185.0, Weight = 78.0, Job = LifestyleType.Student, Note = "Üniversite öğrencisi, sporcu beslenmesi istiyor." },
-                    new { Name = "Elif Şahin", User = "elifsahin", Gender = "Kadın", Age = 40, Height = 160.0, Weight = 85.0, Job = LifestyleType.OfficeWorker, Note = "Bankacı, insülin direnci var." }
+                    new { Name = "Elif Şahin", User = "elifsahin", Gender = "Kadın", Age = 40, Height = 160.0, Weight = 85.0, Job = LifestyleType.OfficeWorker, Note = "Bankacı, insülin direnci var." },
+                    new { Name = "Burak Özkan", User = "burakozkan", Gender = "Erkek", Age = 38, Height = 175.0, Weight = 88.0, Job = LifestyleType.OfficeWorker, Note = "Yazılımcı, gece çalışması yapıyor." },
+                    new { Name = "Selin Arslan", User = "selinarslan", Gender = "Kadın", Age = 25, Height = 168.0, Weight = 58.0, Job = LifestyleType.Student, Note = "Tıp öğrencisi, kilo almak istiyor." },
+                    new { Name = "Murat Koç", User = "muratkoc", Gender = "Erkek", Age = 52, Height = 172.0, Weight = 92.0, Job = LifestyleType.Retired, Note = "Emekli, diyabet riski var." },
+                    new { Name = "Deniz Akın", User = "denizakin", Gender = "Kadın", Age = 30, Height = 162.0, Weight = 70.0, Job = LifestyleType.OfficeWorker, Note = "Avukat, stres yiyor." },
+                    new { Name = "Cem Yalçın", User = "cemyalcin", Gender = "Erkek", Age = 42, Height = 180.0, Weight = 102.0, Job = LifestyleType.OfficeWorker, Note = "Mühendis, obezite sınırında." },
+                    new { Name = "Pınar Erdem", User = "pinarerdem", Gender = "Kadın", Age = 27, Height = 158.0, Weight = 55.0, Job = LifestyleType.HomeMaker, Note = "Yeni anne, emzirme döneminde." },
+                    new { Name = "Oğuz Kara", User = "oguzkara", Gender = "Erkek", Age = 33, Height = 176.0, Weight = 82.0, Job = LifestyleType.OfficeWorker, Note = "Satış temsilcisi, sık seyahat ediyor." },
+                    new { Name = "İrem Tunç", User = "iremtunc", Gender = "Kadın", Age = 35, Height = 166.0, Weight = 72.0, Job = LifestyleType.OfficeWorker, Note = "Hemşire, vardiyalı çalışıyor." },
+                    new { Name = "Serkan Aydın", User = "serkanydin", Gender = "Erkek", Age = 29, Height = 183.0, Weight = 90.0, Job = LifestyleType.Student, Note = "Yüksek lisans öğrencisi, spor yapıyor." }
                 };
 
                 foreach (var p in patients)
@@ -39,13 +48,22 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
                     }
 
                     // Veri ekle
-                    SeedWeightEntries(patientId, p.Weight, p.Weight - 5); // 5 kilo vermiş gibi
+                    SeedWeightEntries(patientId, p.Weight, p.Weight - 5);
                     SeedGoals(patientId);
                     SeedExerciseTasks(patientId, doctorId);
                     SeedBodyMeasurements(patientId);
                     SeedAppointments(patientId, doctorId);
                     SeedMessages(patientId, doctorId, p.Name);
                 }
+
+                // Bugünkü randevular ekle (dashboard'da görünsün)
+                SeedTodayAppointments(doctorId);
+                
+                // Öğünler/Yemek tarifleri ekle
+                SeedMeals(doctorId);
+                
+                // Notlar ekle
+                SeedNotes(doctorId);
 
                 Console.WriteLine("Profesyonel demo veriler başarıyla eklendi.");
             }
@@ -420,6 +438,160 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
             ExecuteSql(sqlPatient);
 
             return userId;
+        }
+
+        /// <summary>
+        /// Bugünkü randevular - Dashboard'da görünsün
+        /// </summary>
+        private static void SeedTodayAppointments(int doctorId)
+        {
+            // Bugün için randevular ekle
+            DateTime today = DateTime.Today;
+            var random = new Random(42);
+            
+            // Tüm hastaları al
+            var patientIds = new List<int>();
+            using (var connection = DatabaseConfig.Instance.CreateConnection())
+            {
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT Id FROM Users WHERE Role = 1 LIMIT 10";
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            patientIds.Add(reader.GetInt32(0));
+                        }
+                    }
+                }
+            }
+
+            if (patientIds.Count == 0) return;
+
+            // Bugün 4-5 randevu ekle
+            string[] times = { "09:00", "10:30", "13:00", "14:30", "16:00" };
+            string[] notes = { "Haftalık kontrol", "İlk görüşme", "Diyet planı değişikliği", "Aylık değerlendirme", "Ölçüm randevusu" };
+            
+            for (int i = 0; i < Math.Min(times.Length, patientIds.Count); i++)
+            {
+                DateTime aptTime = today.Add(TimeSpan.Parse(times[i]));
+                int patientId = patientIds[i];
+                int status = aptTime < DateTime.Now ? 2 : 0; // Geçmiş olanlar tamamlandı
+                
+                string sql = $@"INSERT INTO Appointments (PatientId, DoctorId, DateTime, Type, Status, Notes, Price, CreatedAt) 
+                               VALUES ({patientId}, {doctorId}, '{aptTime:yyyy-MM-dd HH:mm:ss}', 0, {status}, '{notes[i]}', {300 + random.Next(100, 300)}, NOW())
+                               ON DUPLICATE KEY UPDATE Notes = Notes";
+                try { ExecuteSql(sql); } catch { }
+            }
+        }
+
+        /// <summary>
+        /// Yemek tarifleri/Öğünler
+        /// </summary>
+        private static void SeedMeals(int doctorId)
+        {
+            // Mevcut öğünleri kontrol et
+            int mealCount = 0;
+            using (var connection = DatabaseConfig.Instance.CreateConnection())
+            {
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COUNT(*) FROM Meals WHERE DoctorId = @doctorId";
+                    var param = cmd.CreateParameter();
+                    param.ParameterName = "@doctorId";
+                    param.Value = doctorId;
+                    cmd.Parameters.Add(param);
+                    mealCount = Convert.ToInt32(cmd.ExecuteScalar());
+                }
+            }
+
+            if (mealCount >= 15) return; // Zaten yeterli öğün var
+
+            var meals = new[]
+            {
+                new { Name = "Kahvaltı Tabağı", Cal = 450, Prot = 20.0, Carb = 45.0, Fat = 18.0, Type = 0 },
+                new { Name = "Yulaf Ezmesi", Cal = 350, Prot = 12.0, Carb = 55.0, Fat = 8.0, Type = 0 },
+                new { Name = "Menemen", Cal = 280, Prot = 14.0, Carb = 15.0, Fat = 18.0, Type = 0 },
+                new { Name = "Avokadolu Tost", Cal = 420, Prot = 10.0, Carb = 35.0, Fat = 28.0, Type = 0 },
+                new { Name = "Smoothie Bowl", Cal = 380, Prot = 8.0, Carb = 60.0, Fat = 12.0, Type = 0 },
+                new { Name = "Tavuk Salata", Cal = 380, Prot = 35.0, Carb = 15.0, Fat = 20.0, Type = 1 },
+                new { Name = "Mercimek Çorbası", Cal = 180, Prot = 10.0, Carb = 28.0, Fat = 4.0, Type = 1 },
+                new { Name = "Izgara Balık", Cal = 320, Prot = 38.0, Carb = 5.0, Fat = 16.0, Type = 1 },
+                new { Name = "Ton Balıklı Salata", Cal = 290, Prot = 28.0, Carb = 12.0, Fat = 14.0, Type = 1 },
+                new { Name = "Kinoa Tabağı", Cal = 400, Prot = 15.0, Carb = 52.0, Fat = 14.0, Type = 1 },
+                new { Name = "Sebzeli Tavuk", Cal = 420, Prot = 40.0, Carb = 20.0, Fat = 18.0, Type = 2 },
+                new { Name = "Fırın Somon", Cal = 380, Prot = 35.0, Carb = 8.0, Fat = 22.0, Type = 2 },
+                new { Name = "Zeytinyağlı Fasulye", Cal = 220, Prot = 8.0, Carb = 25.0, Fat = 10.0, Type = 2 },
+                new { Name = "Köfte Izgara", Cal = 350, Prot = 32.0, Carb = 8.0, Fat = 20.0, Type = 2 },
+                new { Name = "Sebzeli Omlet", Cal = 280, Prot = 18.0, Carb = 10.0, Fat = 18.0, Type = 2 },
+                new { Name = "Protein Bar", Cal = 200, Prot = 20.0, Carb = 22.0, Fat = 6.0, Type = 3 },
+                new { Name = "Meyve Tabağı", Cal = 150, Prot = 2.0, Carb = 38.0, Fat = 1.0, Type = 3 },
+                new { Name = "Yoğurt + Ceviz", Cal = 220, Prot = 12.0, Carb = 18.0, Fat = 12.0, Type = 3 },
+                new { Name = "Badem + Kuru Üzüm", Cal = 180, Prot = 5.0, Carb = 22.0, Fat = 10.0, Type = 3 },
+                new { Name = "Lor Peyniri", Cal = 120, Prot = 15.0, Carb = 3.0, Fat = 5.0, Type = 3 }
+            };
+
+            foreach (var m in meals)
+            {
+                string sql = $@"INSERT INTO Meals (DoctorId, Name, Calories, Protein, Carbohydrates, Fat, MealType, IsActive, CreatedAt) 
+                               VALUES ({doctorId}, '{m.Name}', {m.Cal}, {m.Prot.ToString().Replace(',', '.')}, {m.Carb.ToString().Replace(',', '.')}, {m.Fat.ToString().Replace(',', '.')}, {m.Type}, 1, NOW())";
+                try { ExecuteSql(sql); } catch { }
+            }
+        }
+
+        /// <summary>
+        /// Hasta notları
+        /// </summary>
+        private static void SeedNotes(int doctorId)
+        {
+            // Her hasta için notlar ekle
+            var noteTexts = new[]
+            {
+                "İlk görüşme yapıldı. Hasta motivasyonu yüksek.",
+                "Diyet planına uyum iyi. Haftalık kilo kaybı hedefte.",
+                "Su tüketimi yetersiz, 2.5 litre hedefi verildi.",
+                "Spor rutini eklendi. Haftada 3 gün yürüyüş.",
+                "Kan tahlilleri normal. Vitamin D takviyesi önerildi.",
+                "Tatlı isteği var, sağlıklı alternatifler sunuldu.",
+                "İş stresi nedeniyle ara öğünler atlanıyor.",
+                "Kilo kaybı yavaşladı, porsiyon kontrolü konuşuldu.",
+                "Hafta sonu dışarıda yemek konusu tartışıldı.",
+                "Hedef kiloya ulaşıldı, koruma programına geçildi."
+            };
+
+            var random = new Random(42);
+            
+            // Tüm hastaları al
+            using (var connection = DatabaseConfig.Instance.CreateConnection())
+            {
+                var patientIds = new List<int>();
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT Id FROM Users WHERE Role = 1";
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            patientIds.Add(reader.GetInt32(0));
+                        }
+                    }
+                }
+
+                foreach (int patientId in patientIds)
+                {
+                    // Her hasta için 2-4 not ekle
+                    int notesToAdd = random.Next(2, 5);
+                    for (int i = 0; i < notesToAdd; i++)
+                    {
+                        DateTime noteDate = DateTime.Now.AddDays(-random.Next(1, 90));
+                        string noteText = noteTexts[random.Next(noteTexts.Length)];
+                        
+                        string sql = $@"INSERT INTO Notes (PatientId, DoctorId, Content, CreatedAt, IsImportant) 
+                                       VALUES ({patientId}, {doctorId}, '{noteText}', '{noteDate:yyyy-MM-dd HH:mm:ss}', {(random.NextDouble() < 0.3 ? 1 : 0)})";
+                        try { ExecuteSql(sql); } catch { }
+                    }
+                }
+            }
         }
     }
 }

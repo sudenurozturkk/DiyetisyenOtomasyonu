@@ -17,9 +17,10 @@ namespace DiyetisyenOtomasyonu.Domain
     public enum AppointmentStatus
     {
         Pending = 0,    // Beklemede (onay bekliyor)
-        Approved = 1,   // Onaylandı
+        Scheduled = 1,  // Planlandı (Onaylandı)
         Completed = 2,  // Tamamlandı
-        Cancelled = 3   // İptal edildi
+        Cancelled = 3,  // İptal edildi
+        NoShow = 4      // Gelmedi
     }
     
     /// <summary>
@@ -44,7 +45,7 @@ namespace DiyetisyenOtomasyonu.Domain
         public string DoctorName { get; set; }
         
         // Durum kontrolü
-        public bool IsUpcoming => Status == AppointmentStatus.Approved && DateTime > System.DateTime.Now;
+        public bool IsUpcoming => Status == AppointmentStatus.Scheduled && DateTime > System.DateTime.Now;
         public bool IsPast => DateTime < System.DateTime.Now;
         
         public string TypeText => Type == AppointmentType.Online ? "Online" : "Klinik";
@@ -55,9 +56,10 @@ namespace DiyetisyenOtomasyonu.Domain
                 switch (Status)
                 {
                     case AppointmentStatus.Pending: return "Beklemede";
-                    case AppointmentStatus.Approved: return "Onaylandı";
+                    case AppointmentStatus.Scheduled: return "Planlandı";
                     case AppointmentStatus.Completed: return "Tamamlandı";
                     case AppointmentStatus.Cancelled: return "İptal";
+                    case AppointmentStatus.NoShow: return "Gelmedi";
                     default: return "Bilinmiyor";
                 }
             }

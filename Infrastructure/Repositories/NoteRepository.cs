@@ -17,11 +17,13 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Repositories
 
         public IEnumerable<Note> GetByPatientId(int patientId)
         {
-            var sql = @"SELECT n.*, u.AdSoyad as DoctorNameFromUser 
+            // DoctorName sutunu olmayabilir, sadece Users tablosundan al
+            var sql = @"SELECT n.Id, n.PatientId, n.DoctorId, n.Content, n.Date, n.Category,
+                               u.AdSoyad as DoctorNameFromUser 
                         FROM Notes n 
                         LEFT JOIN Users u ON n.DoctorId = u.Id
                         WHERE n.PatientId = @patientId 
-                        ORDER BY n.Date DESC";
+                        ORDER BY n.Id DESC";
             
             return ExecuteQuery(sql, new Dictionary<string, object> { { "patientId", patientId } });
         }
@@ -33,24 +35,45 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Repositories
                 Id = Convert.ToInt32(reader["Id"]),
                 PatientId = Convert.ToInt32(reader["PatientId"]),
                 DoctorId = Convert.ToInt32(reader["DoctorId"]),
-                Content = reader["Content"]?.ToString() ?? "",
-                Date = DateTime.Parse(reader["Date"].ToString())
+                Content = reader["Content"]?.ToString() ?? ""
             };
-
-            if (reader["DoctorName"] != DBNull.Value)
-                note.DoctorName = reader["DoctorName"].ToString();
-
-            // Fallback - get doctor name from join if available
+            
+            // Date sütununu güvenli şekilde al
             try
             {
-                if (reader["DoctorNameFromUser"] != DBNull.Value && string.IsNullOrEmpty(note.DoctorName))
+                if (HasColumn(reader, "Date") && reader["Date"] != DBNull.Value)
+                {
+                    note.Date = DateTime.Parse(reader["Date"].ToString());
+                }
+                else
+                {
+                    note.Date = DateTime.Now; // Varsayılan olarak şimdiki zaman
+                }
+            }
+            catch
+            {
+                note.Date = DateTime.Now;
+            }
+
+            // Doktor adini Users tablosundan al
+            try
+            {
+                if (HasColumn(reader, "DoctorNameFromUser") && reader["DoctorNameFromUser"] != DBNull.Value)
                     note.DoctorName = reader["DoctorNameFromUser"].ToString();
+            }
+            catch { }
+
+            // Fallback - DoctorName sutunu varsa oradan al
+            try
+            {
+                if (HasColumn(reader, "DoctorName") && reader["DoctorName"] != DBNull.Value && string.IsNullOrEmpty(note.DoctorName))
+                    note.DoctorName = reader["DoctorName"].ToString();
             }
             catch { }
 
             try
             {
-                if (reader["Category"] != DBNull.Value)
+                if (HasColumn(reader, "Category") && reader["Category"] != DBNull.Value)
                 {
                     var categoryValue = reader["Category"];
                     if (categoryValue is int)
@@ -69,6 +92,16 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Repositories
 
             return note;
         }
+        
+        private bool HasColumn(IDataReader reader, string columnName)
+        {
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                if (reader.GetName(i).Equals(columnName, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
+        }
 
         protected override Dictionary<string, object> MapToParameters(Note entity)
         {
@@ -77,7 +110,6 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Repositories
                 { "Id", entity.Id },
                 { "PatientId", entity.PatientId },
                 { "DoctorId", entity.DoctorId },
-                { "DoctorName", entity.DoctorName ?? "" },
                 { "Content", entity.Content ?? "" },
                 { "Date", entity.Date.ToString("yyyy-MM-dd HH:mm:ss") },
                 { "Category", (int)entity.Category }
@@ -86,14 +118,15 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Repositories
 
         protected override string GetInsertSql()
         {
-            return @"INSERT INTO Notes (PatientId, DoctorId, DoctorName, Content, Date, Category)
-                     VALUES (@PatientId, @DoctorId, @DoctorName, @Content, @Date, @Category)";
+            // DoctorName sutunu kullanmiyoruz, doktor adi Users tablosundan alinir
+            return @"INSERT INTO Notes (PatientId, DoctorId, Content, Date, Category)
+                     VALUES (@PatientId, @DoctorId, @Content, @Date, @Category)";
         }
 
         protected override string GetUpdateSql()
         {
             return @"UPDATE Notes 
-                     SET PatientId = @PatientId, DoctorId = @DoctorId, DoctorName = @DoctorName,
+                     SET PatientId = @PatientId, DoctorId = @DoctorId,
                          Content = @Content, Date = @Date, Category = @Category 
                      WHERE Id = @Id";
         }

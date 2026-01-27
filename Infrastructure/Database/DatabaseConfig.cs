@@ -12,8 +12,8 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Database
         private static DatabaseConfig _instance;
         private static readonly object _lock = new object();
         
-        // MySQL bağlantı dizesi
-        private readonly string _connectionString = "Server=localhost;Database=dietpro_db;Uid=root;Pwd=;CharSet=utf8mb4;";
+        // MySQL bağlantı dizesi - utf8mb4 Türkçe karakterler için gerekli
+        private readonly string _connectionString = "Server=localhost;Database=dietpro_db;Uid=root;Pwd=;CharSet=utf8mb4;SslMode=Preferred;";
 
         private DatabaseConfig()
         {

@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
 using DiyetisyenOtomasyonu.Infrastructure.Security;
 using DiyetisyenOtomasyonu.Shared;
+using DiyetisyenOtomasyonu.Infrastructure.Repositories;
+using System.Linq;
 
 namespace DiyetisyenOtomasyonu.Forms.Patient
 {
@@ -15,23 +18,23 @@ namespace DiyetisyenOtomasyonu.Forms.Patient
         private PanelControl contentPanel;
         private LabelControl lblCurrentPage;
         private SimpleButton btnHome;
+        private PatientRepository _patientRepo;
 
         // RENK PALETI - UiStyles'dan alınıyor
-        private Color BackgroundColor => UiStyles.BackgroundColor;
-        private Color CardColor => UiStyles.CardBackgroundColor;
+        private Color BackgroundColor => Color.FromArgb(245, 247, 250);
+        private Color CardColor => Color.White;
         private Color TextPrimary => UiStyles.TextPrimary;
         private Color TextSecondary => UiStyles.TextSecondary;
         
         // Ana Renkler - Healthcare Theme
-        private Color PrimaryBlue => UiStyles.PrimaryColor;       // Teal
+        private Color PrimaryColor => UiStyles.PrimaryColor;       // Teal
         private Color SuccessGreen => UiStyles.SuccessColor;
-        private Color DangerRed => UiStyles.DangerColor;
         private Color WarningOrange => UiStyles.WarningColor;
-        private Color InfoCyan => UiStyles.InfoColor;
-        private Color Purple => UiStyles.SecondaryColor;          // Indigo
+        private Color InfoBlue => UiStyles.InfoColor;
 
         public FrmPatientShell()
         {
+            _patientRepo = new PatientRepository();
             InitializeComponent();
             SetupUI();
             LoadWelcomeScreen();
@@ -56,18 +59,23 @@ namespace DiyetisyenOtomasyonu.Forms.Patient
             topPanel = new PanelControl
             {
                 Dock = DockStyle.Top,
-                Height = 60,
+                Height = 70,
                 BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder,
                 BackColor = CardColor
+            };
+            // Altına ince çizgi
+            topPanel.Paint += (s, e) => {
+                using (var pen = new Pen(Color.FromArgb(230, 230, 230), 1))
+                    e.Graphics.DrawLine(pen, 0, topPanel.Height - 1, topPanel.Width, topPanel.Height - 1);
             };
 
             btnHome = new SimpleButton
             {
-                Text = "< Ana Sayfa",
-                Location = new Point(15, 14),
-                Size = new Size(110, 32),
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                Appearance = { BackColor = SuccessGreen, ForeColor = Color.White, BorderColor = SuccessGreen },
+                Text = "← Geri",
+                Location = new Point(20, 20),
+                Size = new Size(90, 32),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Appearance = { BackColor = Color.FromArgb(240, 245, 250), ForeColor = TextPrimary, BorderColor = Color.Transparent },
                 Visible = false,
                 AllowFocus = false
             };
@@ -76,27 +84,66 @@ namespace DiyetisyenOtomasyonu.Forms.Patient
 
             lblCurrentPage = new LabelControl
             {
-                Text = "Dashboard",
+                Text = "Ana Sayfa",
                 Font = new Font("Segoe UI", 16F, FontStyle.Bold),
                 ForeColor = TextPrimary,
-                Location = new Point(15, 17),
+                Location = new Point(20, 20),
                 AutoSizeMode = LabelAutoSizeMode.None,
-                Size = new Size(400, 28)
+                Size = new Size(400, 30)
             };
             topPanel.Controls.Add(lblCurrentPage);
 
+            // User Profile Badge (Sağ Üst)
+            var pnlProfile = new Panel
+            {
+                Size = new Size(250, 50),
+                Location = new Point(mainContainer.Width - 270, 10),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                BackColor = Color.Transparent
+            };
+            
             var lblUser = new LabelControl
             {
                 Text = AuthContext.UserName,
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                ForeColor = SuccessGreen,
-                AutoSizeMode = LabelAutoSizeMode.None,
-                Size = new Size(280, 22),
-                Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                Appearance = { TextOptions = { HAlignment = DevExpress.Utils.HorzAlignment.Far } }
+                ForeColor = TextPrimary,
+                Location = new Point(50, 8),
+                AutoSize = true
             };
-            lblUser.Location = new Point(mainContainer.Width - 300, 20);
-            topPanel.Controls.Add(lblUser);
+            
+            var lblRole = new LabelControl
+            {
+                Text = "Hasta",
+                Font = new Font("Segoe UI", 8F),
+                ForeColor = TextSecondary,
+                Location = new Point(50, 28),
+                AutoSize = true
+            };
+
+            // Avatar (Basit daire)
+            var pnlAvatar = new Panel
+            {
+                Size = new Size(40, 40),
+                Location = new Point(0, 5),
+                BackColor = PrimaryColor
+            };
+            pnlAvatar.Paint += (s, e) => {
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                using (var brush = new SolidBrush(PrimaryColor))
+                    e.Graphics.FillEllipse(brush, 0, 0, 39, 39);
+                
+                string initials = string.Join("", AuthContext.UserName.Split(' ').Select(n => n[0])).ToUpper();
+                if (initials.Length > 2) initials = initials.Substring(0, 2);
+                
+                var size = e.Graphics.MeasureString(initials, new Font("Segoe UI", 12F, FontStyle.Bold));
+                e.Graphics.DrawString(initials, new Font("Segoe UI", 12F, FontStyle.Bold), Brushes.White, 
+                    (40 - size.Width) / 2, (40 - size.Height) / 2);
+            };
+
+            pnlProfile.Controls.Add(pnlAvatar);
+            pnlProfile.Controls.Add(lblUser);
+            pnlProfile.Controls.Add(lblRole);
+            topPanel.Controls.Add(pnlProfile);
 
             // Content Panel
             contentPanel = new PanelControl
@@ -104,7 +151,7 @@ namespace DiyetisyenOtomasyonu.Forms.Patient
                 Dock = DockStyle.Fill,
                 BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder,
                 BackColor = BackgroundColor,
-                Padding = new Padding(25),
+                Padding = new Padding(30),
                 AutoScroll = true
             };
 
@@ -115,16 +162,16 @@ namespace DiyetisyenOtomasyonu.Forms.Patient
             // Sidebar
             sidebar = new ModernSidebar();
             sidebar.SetPanelTitle("Hasta Paneli");
-            sidebar.AddMenuItem("H", "Ana Sayfa", "home");
-            sidebar.AddMenuItem("M", "Haftalık Menü", "myplan");
-            sidebar.AddMenuItem("T", "Hedeflerim", "goals");
-            sidebar.AddMenuItem("I", "İlerlemem", "myprogress");
-            sidebar.AddMenuItem("O", "Vücut Ölçülerim", "measurements");
-            sidebar.AddMenuItem("E", "Egzersiz Görevleri", "mytasks");
-            sidebar.AddMenuItem("R", "Randevularım", "appointments");
-            sidebar.AddMenuItem("C", "Mesajlar", "messages");
-            sidebar.AddMenuItem("S", "Ayarlar", "settings");
-            sidebar.AddMenuItem("X", "Çıkış", "logout");
+            sidebar.AddMenuItem("🏠", "Ana Sayfa", "home");
+            sidebar.AddMenuItem("👤", "Profilim", "profile");
+            sidebar.AddMenuItem("🍽️", "Haftalık Menü", "myplan");
+            sidebar.AddMenuItem("🎯", "Hedeflerim", "goals");
+            sidebar.AddMenuItem("📈", "İlerlemem", "myprogress");
+            sidebar.AddMenuItem("📏", "Vücut Ölçülerim", "measurements");
+            sidebar.AddMenuItem("🏃", "Egzersizler", "mytasks");
+            sidebar.AddMenuItem("📅", "Randevular", "appointments");
+            sidebar.AddMenuItem("💬", "Mesajlar", "messages");
+            sidebar.AddMenuItem("🚪", "Çıkış", "logout");
             sidebar.MenuItemClicked += Sidebar_MenuItemClicked;
             this.Controls.Add(sidebar);
         }
@@ -135,6 +182,9 @@ namespace DiyetisyenOtomasyonu.Forms.Patient
             {
                 case "home":
                     LoadWelcomeScreen();
+                    break;
+                case "profile":
+                    LoadChildForm(new FrmPatientProfile(AuthContext.UserId), "Profilim");
                     break;
                 case "myplan":
                     LoadChildForm(new FrmWeeklyMenu(), "Haftalık Menü");
@@ -157,10 +207,6 @@ namespace DiyetisyenOtomasyonu.Forms.Patient
                 case "messages":
                     LoadChildForm(new FrmMessagesPatient(), "Mesajlarım");
                     break;
-                case "settings":
-                    XtraMessageBox.Show("Ayarlar modülü yapım aşamasında...", "Bilgi",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    break;
                 case "logout":
                     Logout();
                     break;
@@ -170,164 +216,302 @@ namespace DiyetisyenOtomasyonu.Forms.Patient
         private void LoadWelcomeScreen()
         {
             lblCurrentPage.Text = "Ana Sayfa";
-            lblCurrentPage.Location = new Point(15, 17);
+            lblCurrentPage.Location = new Point(20, 20);
             btnHome.Visible = false;
             contentPanel.Controls.Clear();
 
-            // Hosgeldin
+            // Hasta verilerini çek
+            var patient = _patientRepo.GetById(AuthContext.UserId);
+            string welcomeMsg = "Hoş Geldiniz";
+            if (patient != null)
+            {
+                int hour = DateTime.Now.Hour;
+                if (hour < 12) welcomeMsg = "Günaydın";
+                else if (hour < 18) welcomeMsg = "İyi Günler";
+                else welcomeMsg = "İyi Akşamlar";
+                
+                welcomeMsg += $", {AuthContext.UserName.Split(' ')[0]}! 👋";
+            }
+
+            // 1. Welcome Header
+            var pnlHeader = new Panel { Dock = DockStyle.Top, Height = 80, BackColor = Color.Transparent };
+            
             var lblWelcome = new LabelControl
             {
-                Text = "Hoş Geldiniz, " + AuthContext.UserName,
+                Text = welcomeMsg,
                 Font = new Font("Segoe UI", 24F, FontStyle.Bold),
                 ForeColor = TextPrimary,
-                Location = new Point(0, 0),
-                AutoSizeMode = LabelAutoSizeMode.None,
-                Size = new Size(700, 40)
+                Location = new Point(0, 10),
+                AutoSize = true
             };
-            contentPanel.Controls.Add(lblWelcome);
+            pnlHeader.Controls.Add(lblWelcome);
 
             var lblSubtitle = new LabelControl
             {
-                Text = "Sağlıklı yaşam yolculuğunuz burada başlıyor!",
-                Font = new Font("Segoe UI", 12F),
+                Text = "Bugün hedeflerine ulaşmak için harika bir gün.",
+                Font = new Font("Segoe UI", 11F),
                 ForeColor = TextSecondary,
-                Location = new Point(0, 45),
-                AutoSizeMode = LabelAutoSizeMode.None,
-                Size = new Size(500, 25)
+                Location = new Point(2, 55),
+                AutoSize = true
             };
-            contentPanel.Controls.Add(lblSubtitle);
+            pnlHeader.Controls.Add(lblSubtitle);
+            contentPanel.Controls.Add(pnlHeader);
 
-            // Dashboard kartlari - 4 kart yan yana
+            // 2. İSTATİSTİK KARTLARI (Renkli ve büyük)
             int startY = 100;
-            int cardWidth = 260;
-            int cardHeight = 140;
-            int spacing = 20;
+            int rightMargin = 60;
+            int totalWidth = contentPanel.Width - rightMargin;
+            int cardSpacing = 20;
+            int cardWidth = (totalWidth - (3 * cardSpacing)) / 4;
+            int cardHeight = 120;
 
-            CreateDashboardCard(0, startY, cardWidth, cardHeight,
-                "7", "Haftalık Menü", "Diyet planını görüntüle", PrimaryBlue, "menu");
+            if (patient != null)
+            {
+                double bmi = patient.Boy > 0 ? patient.GuncelKilo / (patient.Boy * patient.Boy) : 0;
+                string bmiStatus = bmi < 18.5 ? "Zayıf" : bmi < 25 ? "Normal" : bmi < 30 ? "Kilolu" : "Obez";
+                
+                // Kilo Kartı
+                CreateColoredStatCard(0, startY, cardWidth, cardHeight,
+                    "MEVCUT KİLO", $"{patient.GuncelKilo} kg", $"Başlangıç: {patient.BaslangicKilosu}", "⚖️", 
+                    Color.FromArgb(59, 130, 246), Color.FromArgb(37, 99, 235), "myprogress");
 
-            CreateDashboardCard(cardWidth + spacing, startY, cardWidth, cardHeight,
-                "3", "Aktif Hedef", "Hedeflerini takip et", SuccessGreen, "goals");
+                // BMI Kartı
+                Color bmiColor = bmi < 18.5 ? InfoBlue : bmi < 25 ? SuccessGreen : bmi < 30 ? WarningOrange : Color.Red;
+                Color bmiDarkColor = ControlPaint.Dark(bmiColor);
+                CreateColoredStatCard(cardWidth + cardSpacing, startY, cardWidth, cardHeight,
+                    "VÜCUT KİTLE İNDEKSİ", $"{bmi:F1}", bmiStatus, "📊", 
+                    bmiColor, bmiDarkColor, "measurements");
 
-            CreateDashboardCard(2 * (cardWidth + spacing), startY, cardWidth, cardHeight,
-                "-2.5", "Kilo Değişimi", "İlerlemeni incele", Purple, "progress");
+                // Su Kartı (Örnek veri)
+                CreateColoredStatCard(2 * (cardWidth + cardSpacing), startY, cardWidth, cardHeight,
+                    "SU TÜKETİMİ", "1.5 Lt", "Hedef: 2.5 Lt", "💧", 
+                    Color.FromArgb(14, 165, 233), Color.FromArgb(2, 132, 199), "goals");
 
-            CreateDashboardCard(3 * (cardWidth + spacing), startY, cardWidth, cardHeight,
-                "1", "Yeni Mesaj", "Doktorunla iletişim", WarningOrange, "messages");
+                // Adım Kartı (Örnek veri)
+                CreateColoredStatCard(3 * (cardWidth + cardSpacing), startY, cardWidth, cardHeight,
+                    "ADIM SAYISI", "4,250", "Hedef: 10,000", "👣", 
+                    Color.FromArgb(249, 115, 22), Color.FromArgb(234, 88, 12), "goals");
+            }
+
+            // 3. HIZLI ERİŞİM BÖLÜMÜ
+            int quickY = startY + cardHeight + 30;
+
+            var lblQuickActions = new LabelControl
+            {
+                Text = "⚡ Hızlı İşlemler",
+                Font = new Font("Segoe UI", 13F, FontStyle.Bold),
+                ForeColor = TextPrimary,
+                Location = new Point(0, quickY),
+                AutoSizeMode = LabelAutoSizeMode.None,
+                Size = new Size(200, 25)
+            };
+            contentPanel.Controls.Add(lblQuickActions);
+
+            quickY += 35;
+            int btnCount = 4;
+            int btnSpacing = 20;
+            int btnWidth = (totalWidth - ((btnCount - 1) * btnSpacing)) / btnCount;
+            int btnHeight = 90;
+
+            CreateModernQuickButton(0, quickY, btnWidth, btnHeight, "🍽️", "Öğün Bildir", SuccessGreen, () => Sidebar_MenuItemClicked(this, "myplan"));
+            CreateModernQuickButton(btnWidth + btnSpacing, quickY, btnWidth, btnHeight, "💧", "Su Ekle", InfoBlue, () => Sidebar_MenuItemClicked(this, "goals"));
+            CreateModernQuickButton(2 * (btnWidth + btnSpacing), quickY, btnWidth, btnHeight, "⚖️", "Kilo Gir", WarningOrange, () => Sidebar_MenuItemClicked(this, "myprogress"));
+            CreateModernQuickButton(3 * (btnWidth + btnSpacing), quickY, btnWidth, btnHeight, "📅", "Randevu Al", PrimaryColor, () => Sidebar_MenuItemClicked(this, "appointments"));
+
+            // 4. GÜNLÜK ÖZET
+            int summaryY = quickY + btnHeight + 30;
+            
+            var summaryPanel = new PanelControl
+            {
+                Location = new Point(0, summaryY),
+                Size = new Size(totalWidth, 150),
+                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder,
+                BackColor = CardColor
+            };
+            
+            // Rounded corners simulation
+            summaryPanel.Paint += (s, e) => {
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                using (var path = CreateRoundedRect(new Rectangle(0, 0, summaryPanel.Width - 1, summaryPanel.Height - 1), 15))
+                using (var pen = new Pen(Color.FromArgb(230, 230, 230), 1))
+                {
+                    e.Graphics.DrawPath(pen, path);
+                }
+            };
+
+            var lblSummaryTitle = new LabelControl
+            {
+                Text = "📅 Günün Özeti",
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                ForeColor = TextPrimary,
+                Location = new Point(20, 20),
+                AutoSize = true
+            };
+            summaryPanel.Controls.Add(lblSummaryTitle);
+
+            var lblSummaryText = new LabelControl
+            {
+                Text = "Bugünkü diyet planınızın %65'ini tamamladınız. Harika gidiyorsunuz!",
+                Font = new Font("Segoe UI", 10F),
+                ForeColor = TextSecondary,
+                Location = new Point(20, 50),
+                AutoSize = true
+            };
+            summaryPanel.Controls.Add(lblSummaryText);
+
+            var progressBar = new ProgressBarControl
+            {
+                Location = new Point(20, 80),
+                Size = new Size(summaryPanel.Width - 40, 20),
+                Properties = { Maximum = 100, ShowTitle = true, PercentView = true }
+            };
+            progressBar.EditValue = 65;
+            summaryPanel.Controls.Add(progressBar);
+
+            contentPanel.Controls.Add(summaryPanel);
         }
 
-        private void CreateDashboardCard(int x, int y, int width, int height,
-            string stat, string title, string description, Color accentColor, string key)
+        private void CreateColoredStatCard(int x, int y, int width, int height, string title, string value, string subtitle, string icon, Color bgColor, Color darkBgColor, string key)
         {
-            // Gölge paneli (arka plan)
-            var shadowPanel = new Panel
-            {
-                Location = new Point(x + 3, y + 3),
-                Size = new Size(width, height),
-                BackColor = Color.FromArgb(40, 0, 0, 0)
-            };
-            contentPanel.Controls.Add(shadowPanel);
-            shadowPanel.SendToBack();
-
             var card = new PanelControl
             {
                 Location = new Point(x, y),
                 Size = new Size(width, height),
-                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple,
-                BackColor = CardColor,
+                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder,
+                BackColor = bgColor,
                 Cursor = Cursors.Hand
             };
-
-            // Sol renk çizgisi
-            var colorBar = new PanelControl
-            {
-                Location = new Point(0, 0),
-                Size = new Size(5, height),
-                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder,
-                BackColor = accentColor
-            };
-            card.Controls.Add(colorBar);
-
-            // Büyük sayı/değer
-            var lblStat = new LabelControl
-            {
-                Text = stat,
-                Font = new Font("Segoe UI", 36F, FontStyle.Bold),
-                ForeColor = accentColor,
-                Location = new Point(20, 15),
-                AutoSizeMode = LabelAutoSizeMode.None,
-                Size = new Size(120, 50)
-            };
-            card.Controls.Add(lblStat);
 
             // Başlık
             var lblTitle = new LabelControl
             {
                 Text = title,
-                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
-                ForeColor = TextPrimary,
-                Location = new Point(20, 70),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = Color.White,
+                Location = new Point(15, 15),
                 AutoSizeMode = LabelAutoSizeMode.None,
-                Size = new Size(width - 40, 25)
+                Size = new Size(width - 50, 20)
             };
             card.Controls.Add(lblTitle);
 
-            // Açıklama
-            var lblDesc = new LabelControl
+            // İkon
+            var lblIcon = new LabelControl
             {
-                Text = description,
-                Font = new Font("Segoe UI", 9F),
-                ForeColor = TextSecondary,
-                Location = new Point(20, 98),
+                Text = icon,
+                Font = new Font("Segoe UI", 18F),
+                ForeColor = Color.FromArgb(220, 255, 255, 255),
+                Location = new Point(width - 45, 10),
                 AutoSizeMode = LabelAutoSizeMode.None,
-                Size = new Size(width - 40, 20)
+                Size = new Size(40, 35)
             };
-            card.Controls.Add(lblDesc);
+            card.Controls.Add(lblIcon);
 
-            // Profesyonel Hover efekti
-            card.MouseEnter += (s, e) => {
-                card.BackColor = Color.FromArgb(245, 248, 255);
-                card.Location = new Point(x - 2, y - 2);
-                shadowPanel.Location = new Point(x + 5, y + 5);
+            // Değer
+            var lblValue = new LabelControl
+            {
+                Text = value,
+                Font = new Font("Segoe UI", 28F, FontStyle.Bold),
+                ForeColor = Color.White,
+                Location = new Point(15, 40),
+                AutoSizeMode = LabelAutoSizeMode.None,
+                Size = new Size(width - 30, 50)
             };
-            card.MouseLeave += (s, e) => {
-                card.BackColor = CardColor;
-                card.Location = new Point(x, y);
-                shadowPanel.Location = new Point(x + 3, y + 3);
-            };
+            card.Controls.Add(lblValue);
 
-            // Alt kontrollere de hover ve tıklama ekle
+            // Alt Başlık
+            var lblSubtitle = new LabelControl
+            {
+                Text = subtitle,
+                Font = new Font("Segoe UI", 8.5F),
+                ForeColor = Color.FromArgb(230, 255, 255, 255),
+                Location = new Point(15, height - 25),
+                AutoSizeMode = LabelAutoSizeMode.None,
+                Size = new Size(width - 30, 20)
+            };
+            card.Controls.Add(lblSubtitle);
+
+            // Hover
+            card.MouseEnter += (s, e) => card.BackColor = darkBgColor;
+            card.MouseLeave += (s, e) => card.BackColor = bgColor;
             foreach (Control ctrl in card.Controls)
             {
-                ctrl.MouseEnter += (s, e) => {
-                    card.BackColor = Color.FromArgb(245, 248, 255);
-                    card.Location = new Point(x - 2, y - 2);
-                    shadowPanel.Location = new Point(x + 5, y + 5);
-                };
-                ctrl.MouseLeave += (s, e) => {
-                    card.BackColor = CardColor;
-                    card.Location = new Point(x, y);
-                    shadowPanel.Location = new Point(x + 3, y + 3);
-                };
-            }
-
-            // Tıklama
-            card.Click += (s, e) => Sidebar_MenuItemClicked(this, key);
-            foreach (Control ctrl in card.Controls)
-            {
-                ctrl.Click += (s, e) => Sidebar_MenuItemClicked(this, key);
+                ctrl.MouseEnter += (s, e) => card.BackColor = darkBgColor;
+                ctrl.MouseLeave += (s, e) => card.BackColor = bgColor;
                 ctrl.Cursor = Cursors.Hand;
+                ctrl.Click += (s, e) => Sidebar_MenuItemClicked(this, key);
             }
+            card.Click += (s, e) => Sidebar_MenuItemClicked(this, key);
 
             contentPanel.Controls.Add(card);
-            card.BringToFront();
+        }
+
+        private void CreateModernQuickButton(int x, int y, int width, int height, string icon, string text, Color borderColor, Action onClick)
+        {
+            Color lightBgColor = Color.FromArgb(25, borderColor.R, borderColor.G, borderColor.B);
+            Color hoverBgColor = Color.FromArgb(45, borderColor.R, borderColor.G, borderColor.B);
+            
+            var btn = new PanelControl
+            {
+                Location = new Point(x, y),
+                Size = new Size(width, height),
+                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder,
+                BackColor = lightBgColor,
+                Cursor = Cursors.Hand
+            };
+
+            var colorBar = new PanelControl
+            {
+                Location = new Point(0, 0),
+                Size = new Size(5, height),
+                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder,
+                BackColor = borderColor
+            };
+            btn.Controls.Add(colorBar);
+
+            var lblIcon = new LabelControl
+            {
+                Text = icon,
+                Font = new Font("Segoe UI", 24F),
+                ForeColor = borderColor,
+                Location = new Point(0, 15),
+                AutoSizeMode = LabelAutoSizeMode.None,
+                Size = new Size(width, 40),
+                Cursor = Cursors.Hand
+            };
+            lblIcon.Appearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
+            btn.Controls.Add(lblIcon);
+
+            var lblText = new LabelControl
+            {
+                Text = text,
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                ForeColor = TextPrimary,
+                Location = new Point(0, height - 30),
+                AutoSizeMode = LabelAutoSizeMode.None,
+                Size = new Size(width, 20),
+                Cursor = Cursors.Hand
+            };
+            lblText.Appearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
+            btn.Controls.Add(lblText);
+
+            btn.MouseEnter += (s, e) => btn.BackColor = hoverBgColor;
+            btn.MouseLeave += (s, e) => btn.BackColor = lightBgColor;
+            foreach (Control ctrl in btn.Controls)
+            {
+                ctrl.MouseEnter += (s, e) => btn.BackColor = hoverBgColor;
+                ctrl.MouseLeave += (s, e) => btn.BackColor = lightBgColor;
+                ctrl.Click += (s, e) => onClick();
+            }
+            btn.Click += (s, e) => onClick();
+
+            contentPanel.Controls.Add(btn);
         }
 
         private void LoadChildForm(Form childForm, string pageTitle)
         {
             btnHome.Visible = true;
             lblCurrentPage.Text = pageTitle;
-            lblCurrentPage.Location = new Point(135, 17);
+            lblCurrentPage.Location = new Point(120, 20);
 
             contentPanel.Controls.Clear();
             
@@ -340,34 +524,36 @@ namespace DiyetisyenOtomasyonu.Forms.Patient
             contentPanel.Controls.Add(childForm);
             childForm.Show();
 
-            // Fade-in animasyonu
+            // Fade-in
             var fadeTimer = new Timer { Interval = 15 };
             fadeTimer.Tick += (s, e) =>
             {
-                if (childForm.Opacity < 1)
-                {
-                    childForm.Opacity += 0.1;
-                }
-                else
-                {
-                    childForm.Opacity = 1;
-                    fadeTimer.Stop();
-                    fadeTimer.Dispose();
-                }
+                if (childForm.Opacity < 1) childForm.Opacity += 0.1;
+                else { childForm.Opacity = 1; fadeTimer.Stop(); fadeTimer.Dispose(); }
             };
             fadeTimer.Start();
         }
 
         private void Logout()
         {
-            var result = XtraMessageBox.Show("Çıkış yapmak istediğinizden emin misiniz?", "Çıkış",
-                MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-            if (result == DialogResult.Yes)
+            if (XtraMessageBox.Show("Çıkış yapmak istediğinizden emin misiniz?", "Çıkış",
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
                 AuthContext.SignOut();
                 this.Close();
             }
+        }
+
+        private GraphicsPath CreateRoundedRect(Rectangle rect, int radius)
+        {
+            var path = new GraphicsPath();
+            int d = radius * 2;
+            path.AddArc(rect.X, rect.Y, d, d, 180, 90);
+            path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90);
+            path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
+            path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
+            path.CloseFigure();
+            return path;
         }
 
         private void InitializeComponent()

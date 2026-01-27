@@ -108,8 +108,7 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Repositories
             return @"INSERT INTO Messages 
                     (FromUserId, ToUserId, Content, SentAt, IsRead, IsDeletedBySender, IsDeletedByReceiver)
                 VALUES 
-                    (@FromUserId, @ToUserId, @Content, @SentAt, @IsRead, 0, 0);
-                SELECT LAST_INSERT_ID();";
+                    (@FromUserId, @ToUserId, @Content, @SentAt, @IsRead, 0, 0)";
         }
 
         protected override string GetUpdateSql()

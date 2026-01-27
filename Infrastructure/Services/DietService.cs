@@ -172,6 +172,22 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
                 AverageDailyCalories = week.AverageDailyCalories
             };
         }
+        public List<DietWeek> GetDietWeeks(int patientId)
+        {
+            return _dietRepository.GetPatientAllWeeks(patientId).ToList();
+        }
+
+        public List<DietDay> GetDietDays(int weekId)
+        {
+            var week = _dietRepository.GetWeeklyPlanById(weekId);
+            return week?.Days ?? new List<DietDay>();
+        }
+
+        public List<MealItem> GetMealItems(int dayId)
+        {
+            var day = _dietRepository.GetDayPlan(dayId);
+            return day?.Meals ?? new List<MealItem>();
+        }
     }
 
     /// <summary>

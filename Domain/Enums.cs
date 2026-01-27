@@ -20,7 +20,8 @@ namespace DiyetisyenOtomasyonu.Domain
         Snack1 = 1,     // Ara Öğün 1
         Lunch = 2,      // Öğle Yemeği
         Snack2 = 3,     // Ara Öğün 2
-        Dinner = 4      // Akşam Yemeği
+        Dinner = 4,     // Akşam Yemeği
+        Snack = 5       // Genel Ara Öğün
     }
 
     /// <summary>
@@ -127,6 +128,8 @@ namespace DiyetisyenOtomasyonu.Domain
         MealSuggestion = 4,     // Öğün önerisi
         MotivationMessage = 5   // Motivasyon mesajı
     }
+
+
 
     /// <summary>
     /// Not kategorileri

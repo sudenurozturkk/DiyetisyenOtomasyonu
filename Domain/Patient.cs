@@ -25,7 +25,9 @@ namespace DiyetisyenOtomasyonu.Domain
         // Tıbbi bilgiler
         public string ThyroidStatus { get; set; }
         public string InsulinStatus { get; set; }
-        public string MedicalHistory { get; set; }
+        public string MedicalHistory { get; set; }  // Kronik hastalıklar
+        public string Medications { get; set; }      // Kullanılan ilaçlar
+        public string AllergiesText { get; set; }    // Alerjiler (metin)
 
         // Yaşam tarzı ve aktivite
         public LifestyleType LifestyleType { get; set; }

@@ -50,6 +50,12 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Repositories
             if (reader["MedicalHistory"] != DBNull.Value)
                 patient.MedicalHistory = reader["MedicalHistory"].ToString();
 
+            if (reader["Medications"] != DBNull.Value)
+                patient.Medications = reader["Medications"].ToString();
+
+            if (reader["AllergiesText"] != DBNull.Value)
+                patient.AllergiesText = reader["AllergiesText"].ToString();
+
             if (reader["LifestyleType"] != DBNull.Value)
                 patient.LifestyleType = (LifestyleType)Convert.ToInt32(reader["LifestyleType"]);
 
@@ -74,6 +80,8 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Repositories
                 { "ThyroidStatus", entity.ThyroidStatus },
                 { "InsulinStatus", entity.InsulinStatus },
                 { "MedicalHistory", entity.MedicalHistory },
+                { "Medications", entity.Medications },
+                { "AllergiesText", entity.AllergiesText },
                 { "LifestyleType", (int)entity.LifestyleType },
                 { "ActivityLevel", (int)entity.ActivityLevel }
             };
@@ -82,9 +90,9 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Repositories
         protected override string GetInsertSql()
         {
             return @"INSERT INTO Patients (Id, Cinsiyet, Yas, Boy, BaslangicKilosu, GuncelKilo, DoctorId, 
-                     Notlar, ThyroidStatus, InsulinStatus, MedicalHistory, LifestyleType, ActivityLevel)
+                     Notlar, ThyroidStatus, InsulinStatus, MedicalHistory, Medications, AllergiesText, LifestyleType, ActivityLevel)
                      VALUES (@Id, @Cinsiyet, @Yas, @Boy, @BaslangicKilosu, @GuncelKilo, @DoctorId,
-                     @Notlar, @ThyroidStatus, @InsulinStatus, @MedicalHistory, @LifestyleType, @ActivityLevel)";
+                     @Notlar, @ThyroidStatus, @InsulinStatus, @MedicalHistory, @Medications, @AllergiesText, @LifestyleType, @ActivityLevel)";
         }
 
         protected override string GetUpdateSql()
@@ -92,8 +100,53 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Repositories
             return @"UPDATE Patients SET Cinsiyet = @Cinsiyet, Yas = @Yas, Boy = @Boy,
                      BaslangicKilosu = @BaslangicKilosu, GuncelKilo = @GuncelKilo, Notlar = @Notlar,
                      ThyroidStatus = @ThyroidStatus, InsulinStatus = @InsulinStatus, 
-                     MedicalHistory = @MedicalHistory, LifestyleType = @LifestyleType,
-                     ActivityLevel = @ActivityLevel WHERE Id = @Id";
+                     MedicalHistory = @MedicalHistory, Medications = @Medications, AllergiesText = @AllergiesText,
+                     LifestyleType = @LifestyleType, ActivityLevel = @ActivityLevel WHERE Id = @Id";
+        }
+
+        public override bool Update(Patient entity)
+        {
+            using (var connection = CreateConnection())
+            {
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        // 1. Update Patients table
+                        using (var cmd = connection.CreateCommand())
+                        {
+                            cmd.Transaction = transaction;
+                            cmd.CommandText = GetUpdateSql();
+                            
+                            var parameters = MapToParameters(entity);
+                            foreach (var param in parameters)
+                            {
+                                AddParameter(cmd, "@" + param.Key, param.Value);
+                            }
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        // 2. Update Users table (AdSoyad, ProfilePhoto)
+                        using (var cmdUser = connection.CreateCommand())
+                        {
+                            cmdUser.Transaction = transaction;
+                            cmdUser.CommandText = "UPDATE Users SET AdSoyad = @AdSoyad, ProfilePhoto = @ProfilePhoto WHERE Id = @Id";
+                            AddParameter(cmdUser, "@AdSoyad", entity.AdSoyad);
+                            AddParameter(cmdUser, "@ProfilePhoto", entity.ProfilePhoto);
+                            AddParameter(cmdUser, "@Id", entity.Id);
+                            cmdUser.ExecuteNonQuery();
+                        }
+
+                        transaction.Commit();
+                        return true;
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -113,6 +166,7 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Repositories
                 patient.Role = user.Role;
                 patient.KayitTarihi = user.KayitTarihi;
                 patient.AktifMi = user.AktifMi;
+                patient.ProfilePhoto = user.ProfilePhoto; // ProfilePhoto'yu User'dan al
             }
 
             return patient;
@@ -269,9 +323,9 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Repositories
                             patientCmd.Transaction = transaction;
                             patientCmd.CommandText = @"
                                 INSERT INTO Patients (Id, Cinsiyet, Yas, Boy, BaslangicKilosu, GuncelKilo, DoctorId,
-                                    Notlar, ThyroidStatus, InsulinStatus, MedicalHistory, LifestyleType, ActivityLevel)
+                                    Notlar, ThyroidStatus, InsulinStatus, MedicalHistory, Medications, AllergiesText, LifestyleType, ActivityLevel)
                                 VALUES (@id, @cinsiyet, @yas, @boy, @baslangicKilo, @guncelKilo, @doctorId,
-                                    @notlar, @thyroid, @insulin, @history, @lifestyle, @activity)";
+                                    @notlar, @thyroid, @insulin, @history, @medications, @allergies, @lifestyle, @activity)";
 
                             AddParameter(patientCmd, "@id", userId);
                             AddParameter(patientCmd, "@cinsiyet", patient.Cinsiyet);
@@ -284,6 +338,8 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Repositories
                             AddParameter(patientCmd, "@thyroid", patient.ThyroidStatus);
                             AddParameter(patientCmd, "@insulin", patient.InsulinStatus);
                             AddParameter(patientCmd, "@history", patient.MedicalHistory);
+                            AddParameter(patientCmd, "@medications", patient.Medications);
+                            AddParameter(patientCmd, "@allergies", patient.AllergiesText);
                             AddParameter(patientCmd, "@lifestyle", (int)patient.LifestyleType);
                             AddParameter(patientCmd, "@activity", (int)patient.ActivityLevel);
 

@@ -1,14 +1,11 @@
 ﻿using System;
-using System.ComponentModel;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
-using DevExpress.XtraGrid;
-using DevExpress.XtraGrid.Views.Grid;
-using DevExpress.XtraGrid.Columns;
-using DevExpress.XtraTab;
+using DevExpress.XtraEditors.Controls;
 using DiyetisyenOtomasyonu.Domain;
 using DiyetisyenOtomasyonu.Infrastructure.Services;
 using DiyetisyenOtomasyonu.Infrastructure.Security;
@@ -16,176 +13,169 @@ using DiyetisyenOtomasyonu.Shared;
 
 namespace DiyetisyenOtomasyonu.Forms.Patient
 {
-    /// <summary>
-    /// Haftalık menü ve öğün onaylama formu - Modern Tasarım
-    /// </summary>
     public partial class FrmWeeklyMenu : XtraForm
     {
         private readonly DietService _dietService;
-        private DateEdit dateWeek;
-        private SimpleButton btnLoadWeek;
-        private XtraTabControl tabDays;
-        private Panel pnlSummaryCards;
+        private DietWeek _currentDietWeek;
+        private DateTime _selectedDate;
+        private List<DietDay> _dietDays;
 
-        private DietWeek _currentWeek;
-        private System.Collections.Generic.Dictionary<int, GridControl> _dayGrids = new System.Collections.Generic.Dictionary<int, GridControl>();
+        // Modern Renkler - UiStyles
+        private Color PrimaryColor => UiStyles.PrimaryColor;
+        private Color SuccessGreen => UiStyles.SuccessColor;
+        private Color InfoBlue => UiStyles.InfoColor;
+        private Color WarningOrange => UiStyles.WarningColor;
+        private Color CardColor => Color.White;
+        private Color BackgroundColor => Color.FromArgb(245, 247, 250);
+        private Color TextPrimary => UiStyles.TextPrimary;
+        private Color TextSecondary => UiStyles.TextSecondary;
 
-        // Modern Renkler - Yeşil Tema
-        private readonly Color PrimaryGreen = Color.FromArgb(13, 148, 136);
-        private readonly Color SuccessGreen = Color.FromArgb(34, 197, 94);
-        private readonly Color InfoBlue = Color.FromArgb(59, 130, 246);
-        private readonly Color WarningOrange = Color.FromArgb(249, 115, 22);
-        private readonly Color CardWhite = Color.White;
-        private readonly Color BackgroundLight = Color.FromArgb(248, 250, 252);
-        private readonly Color TextDark = Color.FromArgb(30, 41, 59);
-        private readonly Color TextMedium = Color.FromArgb(100, 116, 139);
-        private readonly Color BorderGray = Color.FromArgb(226, 232, 240);
+        // UI Elements
+        private PanelControl pnlDays;
+        private XtraScrollableControl pnlMeals;
+        private LabelControl lblTotalCalories;
+        private LabelControl lblTotalProtein;
+        private LabelControl lblTotalCarb;
+        private LabelControl lblTotalFat;
+        private ComboBoxEdit cmbWeeks;
 
         public FrmWeeklyMenu()
         {
             InitializeComponent();
             _dietService = new DietService();
-            InitializeUI();
+            _selectedDate = DateTime.Today;
+            SetupUI();
+            LoadDietWeeks();
         }
 
-        private void InitializeUI()
+        private void SetupUI()
         {
-            this.Text = "Haftalık Menüm";
-            this.BackColor = BackgroundLight;
+            this.Text = "Haftalık Menü";
+            this.BackColor = BackgroundColor;
             this.FormBorderStyle = FormBorderStyle.None;
-            this.Padding = new Padding(15);
+            this.Padding = new Padding(20);
 
-            // Ana Layout
             var mainLayout = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 1,
                 RowCount = 3,
+                ColumnCount = 1,
                 BackColor = Color.Transparent
             };
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 70));  // Header
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 100)); // Summary Cards
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));  // Tabs/Grid
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 160)); // Header & Summary
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 60));  // Days
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));  // Meals
 
-            // 1. Header Panel
-            var pnlHeader = CreateHeaderPanel();
-            mainLayout.Controls.Add(pnlHeader, 0, 0);
+            // 1. Header & Summary
+            var headerPanel = CreateHeaderPanel();
+            mainLayout.Controls.Add(headerPanel, 0, 0);
 
-            // 2. Summary Cards Panel
-            pnlSummaryCards = CreateSummaryPanel();
-            mainLayout.Controls.Add(pnlSummaryCards, 0, 1);
-
-            // 3. Tab Control (Günler)
-            tabDays = new XtraTabControl
+            // 2. Days Navigation
+            pnlDays = new PanelControl
             {
                 Dock = DockStyle.Fill,
-                Appearance = { BackColor = BackgroundLight },
-                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder
+                BorderStyle = BorderStyles.NoBorder,
+                BackColor = Color.Transparent
             };
-            tabDays.AppearancePage.Header.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            tabDays.AppearancePage.HeaderActive.ForeColor = PrimaryGreen;
-            
-            mainLayout.Controls.Add(tabDays, 0, 2);
+            mainLayout.Controls.Add(pnlDays, 0, 1);
 
-            string[] dayNames = { "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar" };
-            for (int i = 0; i < 7; i++)
+            // 3. Meals List
+            pnlMeals = new XtraScrollableControl
             {
-                var tabPage = new XtraTabPage { Text = dayNames[i] };
-                tabPage.Appearance.Header.Font = new Font("Segoe UI", 10F);
-                tabDays.TabPages.Add(tabPage);
-                CreateDayPanel(tabPage, i);
-            }
+                Dock = DockStyle.Fill,
+                BackColor = Color.Transparent
+            };
+            mainLayout.Controls.Add(pnlMeals, 0, 2);
 
             this.Controls.Add(mainLayout);
         }
 
-        private Panel CreateHeaderPanel()
+        private PanelControl CreateHeaderPanel()
         {
-            var panel = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
+            var panel = new PanelControl
+            {
+                Dock = DockStyle.Fill,
+                BorderStyle = BorderStyles.NoBorder,
+                BackColor = Color.Transparent
+            };
 
-            var lblTitle = new Label
+            // Title & Week Selection
+            var lblTitle = new LabelControl
             {
                 Text = "📅 Haftalık Yemek Planım",
                 Font = new Font("Segoe UI", 16F, FontStyle.Bold),
-                ForeColor = TextDark,
+                ForeColor = TextPrimary,
                 Location = new Point(0, 10),
                 AutoSize = true
             };
             panel.Controls.Add(lblTitle);
 
-            // Tarih Seçimi
-            var lblWeek = new Label
+            cmbWeeks = new ComboBoxEdit
             {
-                Text = "Hafta Başlangıcı:",
-                Font = new Font("Segoe UI", 10F),
-                ForeColor = TextMedium,
-                Location = new Point(300, 18),
-                AutoSize = true
+                Location = new Point(300, 12),
+                Size = new Size(200, 30),
+                Properties = { TextEditStyle = TextEditStyles.DisableTextEditor }
             };
-            panel.Controls.Add(lblWeek);
+            cmbWeeks.Properties.Appearance.Font = new Font("Segoe UI", 10F);
+            cmbWeeks.SelectedIndexChanged += (s, e) => LoadSelectedWeek();
+            panel.Controls.Add(cmbWeeks);
 
-            dateWeek = new DateEdit
-            {
-                Location = new Point(410, 15),
-                Size = new Size(140, 30),
-                Properties = { Appearance = { Font = new Font("Segoe UI", 10F) } }
-            };
-            dateWeek.DateTime = GetMonday(DateTime.Now);
-            panel.Controls.Add(dateWeek);
-
-            btnLoadWeek = new SimpleButton
+            var btnRefresh = new SimpleButton
             {
                 Text = "Planı Getir",
-                Location = new Point(560, 14),
+                Location = new Point(510, 10),
                 Size = new Size(100, 32),
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                Appearance = { BackColor = PrimaryGreen, ForeColor = Color.White }
+                Appearance = { BackColor = PrimaryColor, ForeColor = Color.White, BorderColor = PrimaryColor }
             };
-            btnLoadWeek.Click += BtnLoadWeek_Click;
-            panel.Controls.Add(btnLoadWeek);
+            btnRefresh.Click += (s, e) => LoadDietWeeks();
+            panel.Controls.Add(btnRefresh);
+
+            // Summary Cards
+            int cardWidth = 180;
+            int spacing = 15;
+            int startY = 60;
+
+            lblTotalCalories = CreateSummaryCard(panel, 0, startY, "Günlük Ort. Kalori", "0 kcal", WarningOrange);
+            lblTotalProtein = CreateSummaryCard(panel, cardWidth + spacing, startY, "Günlük Protein", "0 g", PrimaryColor);
+            lblTotalCarb = CreateSummaryCard(panel, 2 * (cardWidth + spacing), startY, "Günlük Karb", "0 g", InfoBlue);
+            lblTotalFat = CreateSummaryCard(panel, 3 * (cardWidth + spacing), startY, "Günlük Yağ", "0 g", Color.Gray);
 
             return panel;
         }
 
-        private Panel CreateSummaryPanel()
+        private LabelControl CreateSummaryCard(PanelControl parent, int x, int y, string title, string value, Color color)
         {
-            var panel = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Padding = new Padding(0, 5, 0, 15) };
-            
-            // 4 Kart: Kalori, Protein, Karb, Yağ
-            int cardWidth = 200;
-            int gap = 20;
-
-            CreateSummaryCard(panel, 0, "🔥 Günlük Ort. Kalori", "0 kcal", WarningOrange);
-            CreateSummaryCard(panel, cardWidth + gap, "🥩 Günlük Protein", "0 g", PrimaryGreen);
-            CreateSummaryCard(panel, (cardWidth + gap) * 2, "🍞 Günlük Karb", "0 g", InfoBlue);
-            CreateSummaryCard(panel, (cardWidth + gap) * 3, "🥑 Günlük Yağ", "0 g", Color.Gray);
-
-            return panel;
-        }
-
-        private void CreateSummaryCard(Panel parent, int x, string title, string value, Color color)
-        {
-            var card = new Panel
+            var card = new PanelControl
             {
-                Location = new Point(x, 5),
-                Size = new Size(200, 80),
-                BackColor = CardWhite
+                Location = new Point(x, y),
+                Size = new Size(180, 80),
+                BorderStyle = BorderStyles.NoBorder,
+                BackColor = CardColor
             };
-            card.Paint += (s, e) => DrawRoundedBorder(e.Graphics, card, 10, color);
+            
+            // Left border
+            var border = new PanelControl
+            {
+                Dock = DockStyle.Left,
+                Width = 4,
+                BorderStyle = BorderStyles.NoBorder,
+                BackColor = color
+            };
+            card.Controls.Add(border);
 
-            var lblTitle = new Label
+            var lblTitle = new LabelControl
             {
                 Text = title,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                ForeColor = TextMedium,
+                ForeColor = TextSecondary,
                 Location = new Point(15, 15),
                 AutoSize = true
             };
             card.Controls.Add(lblTitle);
 
-            var lblValue = new Label
+            var lblValue = new LabelControl
             {
-                Name = "lblValue_" + title.Split(' ')[1], // Tag için basit isim
                 Text = value,
                 Font = new Font("Segoe UI", 16F, FontStyle.Bold),
                 ForeColor = color,
@@ -195,193 +185,217 @@ namespace DiyetisyenOtomasyonu.Forms.Patient
             card.Controls.Add(lblValue);
 
             parent.Controls.Add(card);
+            return lblValue;
         }
 
-        private void CreateDayPanel(XtraTabPage tabPage, int dayIndex)
+        private void LoadDietWeeks()
         {
-            var panel = new Panel { Dock = DockStyle.Fill, BackColor = CardWhite, Padding = new Padding(10) };
+            var weeks = _dietService.GetDietWeeks(AuthContext.UserId);
+            cmbWeeks.Properties.Items.Clear();
             
-            var grid = new GridControl { Dock = DockStyle.Fill, LookAndFeel = { UseDefaultLookAndFeel = false, Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat } };
-            var view = new GridView(grid);
-            grid.MainView = view;
-            
-            // Grid Ayarları
-            view.OptionsView.ShowGroupPanel = false;
-            view.OptionsView.ShowIndicator = false;
-            view.OptionsBehavior.Editable = true; // Checkbox için true olmalı
-            view.RowHeight = 45;
-            
-            view.Appearance.HeaderPanel.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            view.Appearance.HeaderPanel.BackColor = Color.FromArgb(241, 245, 249);
-            view.Appearance.HeaderPanel.ForeColor = TextDark;
-            
-            view.Appearance.Row.Font = new Font("Segoe UI", 10F);
-            view.Appearance.Row.ForeColor = TextDark;
-
-            // Kolonlar
-            view.Columns.Add(new GridColumn { FieldName = "MealTypeName", Caption = "Öğün", Visible = true, Width = 100 });
-            view.Columns.Add(new GridColumn { FieldName = "Name", Caption = "Yemek / Besin", Visible = true, Width = 300 });
-            view.Columns.Add(new GridColumn { FieldName = "Calories", Caption = "Kalori", Visible = true, Width = 80 });
-            view.Columns.Add(new GridColumn { FieldName = "Protein", Caption = "Prot (g)", Visible = true, Width = 80 });
-            view.Columns.Add(new GridColumn { FieldName = "Carbs", Caption = "Karb (g)", Visible = true, Width = 80 });
-            
-            var colConfirmed = view.Columns.Add();
-            colConfirmed.FieldName = "IsConfirmedByPatient";
-            colConfirmed.Caption = "Yedim ✅";
-            colConfirmed.Visible = true;
-            colConfirmed.Width = 80;
-            var checkEdit = new DevExpress.XtraEditors.Repository.RepositoryItemCheckEdit();
-            checkEdit.CheckBoxOptions.Style = DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgCheckBox1;
-            colConfirmed.ColumnEdit = checkEdit;
-
-            // Sadece Checkbox düzenlenebilir olsun
-            view.ShowingEditor += (s, e) => 
+            if (weeks.Any())
             {
-                if (view.FocusedColumn.FieldName != "IsConfirmedByPatient")
-                    e.Cancel = true;
+                foreach (var week in weeks)
+                {
+                    cmbWeeks.Properties.Items.Add(new ComboBoxItem(week));
+                }
+                cmbWeeks.SelectedIndex = 0; // Select latest
+            }
+            else
+            {
+                XtraMessageBox.Show("Henüz atanmış bir diyet listeniz bulunmuyor.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        private void LoadSelectedWeek()
+        {
+            if (cmbWeeks.SelectedItem is ComboBoxItem item)
+            {
+                _currentDietWeek = item.Value;
+                _dietDays = _dietService.GetDietDays(_currentDietWeek.Id).ToList();
+                
+                CreateDayButtons();
+                LoadMealsForDate(_selectedDate);
+                UpdateSummary();
+            }
+        }
+
+        private void CreateDayButtons()
+        {
+            pnlDays.Controls.Clear();
+            string[] days = { "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar" };
+            
+            int x = 0;
+            int width = 120;
+            
+            for (int i = 0; i < 7; i++)
+            {
+                var dayName = days[i];
+                // Tarihi bul (Hafta başlangıcına göre)
+                var date = _currentDietWeek.WeekStartDate.AddDays(i);
+                bool isSelected = date.Date == _selectedDate.Date;
+
+                var btn = new SimpleButton
+                {
+                    Text = dayName,
+                    Location = new Point(x, 10),
+                    Size = new Size(width, 40),
+                    Font = new Font("Segoe UI", 9F, isSelected ? FontStyle.Bold : FontStyle.Regular),
+                    Appearance = { 
+                        BackColor = isSelected ? PrimaryColor : CardColor, 
+                        ForeColor = isSelected ? Color.White : TextPrimary,
+                        BorderColor = isSelected ? PrimaryColor : Color.LightGray
+                    },
+                    Cursor = Cursors.Hand
+                };
+                
+                btn.Click += (s, e) => {
+                    _selectedDate = date;
+                    CreateDayButtons(); // Refresh styles
+                    LoadMealsForDate(_selectedDate);
+                };
+
+                pnlDays.Controls.Add(btn);
+                x += width + 10;
+            }
+        }
+
+        private void LoadMealsForDate(DateTime date)
+        {
+            pnlMeals.Controls.Clear();
+            
+            var day = _dietDays.FirstOrDefault(d => d.Date.Date == date.Date);
+            if (day == null)
+            {
+                var lbl = new LabelControl { Text = "Bu gün için plan bulunamadı.", Location = new Point(20, 20) };
+                pnlMeals.Controls.Add(lbl);
+                return;
+            }
+
+            var meals = _dietService.GetMealItems(day.Id);
+            int y = 0;
+
+            foreach (var meal in meals)
+            {
+                var card = CreateMealCard(meal);
+                card.Location = new Point(0, y);
+                card.Width = pnlMeals.Width - 20;
+                pnlMeals.Controls.Add(card);
+                y += card.Height + 15;
+            }
+        }
+
+        private PanelControl CreateMealCard(MealItem meal)
+        {
+            var card = new PanelControl
+            {
+                Height = 80,
+                BorderStyle = BorderStyles.NoBorder,
+                BackColor = CardColor,
+                Padding = new Padding(15)
             };
 
-            // Checkbox değiştiğinde
-            view.CellValueChanged += (s, e) =>
+            // Icon
+            var lblIcon = new LabelControl
             {
-                if (e.Column.FieldName == "IsConfirmedByPatient")
-                {
-                    var meal = view.GetRow(e.RowHandle) as MealItem;
-                    if (meal != null)
-                    {
-                        _dietService.ConfirmMeal(meal.Id, meal.IsConfirmedByPatient);
-                        UpdateWeekStats(); // İstatistikleri güncelle
-                    }
-                }
+                Text = GetMealIcon(meal.MealType),
+                Font = new Font("Segoe UI", 20F),
+                Location = new Point(15, 20),
+                AutoSize = true
             };
+            card.Controls.Add(lblIcon);
 
-            panel.Controls.Add(grid);
-            tabPage.Controls.Add(panel);
-            _dayGrids[dayIndex] = grid;
+            // Meal Name & Type
+            var lblName = new LabelControl
+            {
+                Text = meal.Name,
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                ForeColor = TextPrimary,
+                Location = new Point(60, 15),
+                AutoSize = true
+            };
+            card.Controls.Add(lblName);
+
+            var lblType = new LabelControl
+            {
+                Text = meal.MealType.ToString(),
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = TextSecondary,
+                Location = new Point(60, 40),
+                AutoSize = true
+            };
+            card.Controls.Add(lblType);
+
+            // Macros
+            var lblMacros = new LabelControl
+            {
+                Text = $"{meal.Calories} kcal | P: {meal.Protein}g | K: {meal.Carbs}g | Y: {meal.Fat}g",
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = InfoBlue,
+                Location = new Point(300, 30),
+                AutoSize = true
+            };
+            card.Controls.Add(lblMacros);
+
+            // Checkbox
+            var chk = new CheckEdit
+            {
+                Text = "Yedim",
+                Location = new Point(card.Width - 100, 25),
+                Properties = { Caption = "Yedim" }
+            };
+            chk.Checked = meal.IsConfirmedByPatient;
+            chk.CheckedChanged += (s, e) => {
+                _dietService.ConfirmMeal(meal.Id, chk.Checked);
+                meal.IsConfirmedByPatient = chk.Checked;
+            };
+            card.Controls.Add(chk);
+
+            // Resize
+            card.Resize += (s, e) => chk.Location = new Point(card.Width - 100, 25);
+
+            return card;
         }
 
-        private void BtnLoadWeek_Click(object sender, EventArgs e)
+        private string GetMealIcon(MealType type)
         {
-            try
+            switch (type)
             {
-                DateTime weekStart = GetMonday(dateWeek.DateTime);
-                _currentWeek = _dietService.GetWeeklyPlan(AuthContext.UserId, weekStart);
-
-                if (_currentWeek == null)
-                {
-                    ToastNotification.ShowWarning("Bu hafta için plan bulunamadı.");
-                    ClearGrids();
-                    return;
-                }
-
-                // Grid'leri doldur
-                for (int i = 0; i < 7; i++)
-                {
-                    if (i < _currentWeek.Days.Count)
-                    {
-                        var day = _currentWeek.Days[i];
-                        _dayGrids[i].DataSource = new BindingList<MealItem>(day.Meals);
-                    }
-                    else
-                    {
-                        _dayGrids[i].DataSource = null;
-                    }
-                }
-
-                UpdateWeekStats();
-                ToastNotification.ShowSuccess("Haftalık menü yüklendi!");
-            }
-            catch (Exception ex)
-            {
-                ToastNotification.ShowError($"Hata: {ex.Message}");
-            }
-        }
-
-        private void ClearGrids()
-        {
-            foreach (var grid in _dayGrids.Values)
-                grid.DataSource = null;
-            UpdateSummaryCard("Ort.", "0 kcal");
-            UpdateSummaryCard("Protein", "0 g");
-            UpdateSummaryCard("Karb", "0 g");
-            UpdateSummaryCard("Yağ", "0 g");
-        }
-
-        private void UpdateWeekStats()
-        {
-            if (_currentWeek == null) return;
-
-            UpdateSummaryCard("Ort.", $"{_currentWeek.AverageDailyCalories:F0} kcal");
-            
-            // Basit ortalamalar (gerçek veride servisten gelmeli ama burada hesaplayabiliriz)
-            double totalProt = 0, totalCarb = 0, totalFat = 0;
-            int days = 0;
-            foreach(var day in _currentWeek.Days)
-            {
-                if(day.Meals.Any())
-                {
-                    totalProt += day.TotalProtein;
-                    totalCarb += day.TotalCarbs;
-                    totalFat += day.TotalFat;
-                    days++;
-                }
-            }
-            
-            if (days > 0)
-            {
-                UpdateSummaryCard("Protein", $"{totalProt/days:F0} g");
-                UpdateSummaryCard("Karb", $"{totalCarb/days:F0} g");
-                UpdateSummaryCard("Yağ", $"{totalFat/days:F0} g");
+                case MealType.Breakfast: return "🍳";
+                case MealType.Lunch: return "🥗";
+                case MealType.Dinner: return "🥩";
+                case MealType.Snack: return "🍎";
+                default: return "🍽️";
             }
         }
 
-        private void UpdateSummaryCard(string key, string value)
+        private void UpdateSummary()
         {
-            foreach(Control ctrl in pnlSummaryCards.Controls)
+            if (_dietDays == null || !_dietDays.Any()) return;
+
+            // Calculate averages or totals for the selected day
+            var day = _dietDays.FirstOrDefault(d => d.Date.Date == _selectedDate.Date);
+            if (day != null)
             {
-                var lbl = ctrl.Controls.OfType<Label>().FirstOrDefault(l => l.Name.Contains(key));
-                if (lbl != null)
-                {
-                    lbl.Text = value;
-                    break;
-                }
+                var meals = _dietService.GetMealItems(day.Id);
+                lblTotalCalories.Text = $"{meals.Sum(m => m.Calories):F0} kcal";
+                lblTotalProtein.Text = $"{meals.Sum(m => m.Protein):F0} g";
+                lblTotalCarb.Text = $"{meals.Sum(m => m.Carbs):F0} g";
+                lblTotalFat.Text = $"{meals.Sum(m => m.Fat):F0} g";
             }
         }
 
-        private DateTime GetMonday(DateTime date)
+        private class ComboBoxItem
         {
-            int diff = (7 + (date.DayOfWeek - DayOfWeek.Monday)) % 7;
-            return date.AddDays(-1 * diff).Date;
-        }
-
-        private void DrawRoundedBorder(Graphics g, Panel panel, int radius, Color borderColor)
-        {
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            using (var path = CreateRoundedRect(new Rectangle(0, 0, panel.Width - 1, panel.Height - 1), radius))
-            using (var brush = new SolidBrush(panel.BackColor))
-            using (var pen = new Pen(borderColor, 2))
-            {
-                g.FillPath(brush, path);
-                g.DrawPath(pen, path);
-            }
-        }
-
-        private GraphicsPath CreateRoundedRect(Rectangle rect, int radius)
-        {
-            var path = new GraphicsPath();
-            int d = radius * 2;
-            path.AddArc(rect.X, rect.Y, d, d, 180, 90);
-            path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90);
-            path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
-            path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
-            path.CloseFigure();
-            return path;
+            public DietWeek Value { get; }
+            public ComboBoxItem(DietWeek value) { Value = value; }
+            public override string ToString() => $"Hafta Başlangıcı: {Value.WeekStartDate:dd.MM.yyyy}";
         }
 
         private void InitializeComponent()
         {
             this.SuspendLayout();
-            this.ClientSize = new System.Drawing.Size(1100, 650);
+            this.ClientSize = new System.Drawing.Size(1100, 600);
             this.Name = "FrmWeeklyMenu";
             this.ResumeLayout(false);
         }

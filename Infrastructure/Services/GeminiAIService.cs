@@ -26,8 +26,8 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
 
         public async Task<string> GetAIResponseAsync(string prompt)
         {
-            int maxRetries = 3;
-            int retryDelayMs = 2000;
+            int maxRetries = 5;
+            int retryDelayMs = 3000;
 
             for (int attempt = 1; attempt <= maxRetries; attempt++)
             {
@@ -35,7 +35,7 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
                 {
                     var requestBody = new
                     {
-                        model = "google/gemini-2.0-flash-exp:free",
+                        model = "google/gemini-2.0-flash-001",
                         messages = new[]
                         {
                             new { role = "user", content = prompt }
@@ -54,7 +54,7 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
                             await Task.Delay(retryDelayMs * attempt);
                             continue;
                         }
-                        return "⚠️ API istek limiti aşıldı. Lütfen birkaç dakika bekleyip tekrar deneyin.";
+                        return "⚠️ API istek limiti aşıldı. Birkaç dakika bekleyip tekrar deneyin. İpucu: OpenRouter hesabınıza kredi ekleyin.";
                     }
                     
                     string jsonResponse = await response.Content.ReadAsStringAsync();
@@ -129,6 +129,101 @@ HASTA VERİLERİ:
             }
 
             return result;
+        }
+
+
+        public async Task<DietitianSupportResponse> GetStructuredAnalysisAsync(string context)
+        {
+            string systemPrompt = @"Sen bir diyetisyen destek asistanısın.
+Görevin SADECE verilen hasta verilerini yorumlamak ve destek metinleri üretmek.
+Sen doktor DEĞİLSİN. Kesinlikle tanı koymaz veya tedavi önermezsin.
+SON KARARLARI diyetisyen verir, sen sadece yardımcısın.
+BMI, kalori veya hedef HESAPLAMASI yapmazsın - bunlar zaten veriliyor.
+ÖNEMLİ: Sadece sana verilen verilere dayanarak yorum yap. VERİLMEYEN bilgileri (aile geçmişi, kronik hastalık vb.) UYDURMAYACAKSIN.
+Çıktı MUTLAKA şu JSON şemasına uygun olmalı:
+{
+  ""analysis_summary"": ""string - genel durum özeti"",
+  ""nutrition_comment"": ""string - beslenme yorumu"",
+  ""daily_recommendations"": [""string - günlük tavsiyeler""],
+  ""warnings"": [""string - dikkat edilmesi gerekenler""],
+  ""dietitian_note_suggestion"": ""string - diyetisyen için not önerisi""
+}
+Nötr ve profesyonel dil kullan. Türkçe yaz.
+Markdown formatı kullanma (```json gibi). Sadece ham JSON döndür.";
+
+            string userPrompt = $"HASTA VERİLERİ:\n{context}";
+
+            int maxRetries = 5;
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
+            {
+                try
+                {
+                    var requestBody = new
+                    {
+                        model = "google/gemini-2.0-flash-001",
+                        messages = new[]
+                        {
+                            new { role = "system", content = systemPrompt },
+                            new { role = "user", content = userPrompt }
+                        },
+                        response_format = new { type = "json_object" }
+                    };
+
+                    string jsonRequest = JsonSerializer.Serialize(requestBody);
+                    var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
+
+                    var response = await _httpClient.PostAsync(_apiUrl, content);
+                    string jsonResponse = await response.Content.ReadAsStringAsync();
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        if (attempt < maxRetries) { await Task.Delay(1000 * attempt); continue; }
+                        return CreateFallbackResponse("API Error: " + response.StatusCode);
+                    }
+
+                    using (JsonDocument doc = JsonDocument.Parse(jsonResponse))
+                    {
+                        var choices = doc.RootElement.GetProperty("choices");
+                        if (choices.GetArrayLength() > 0)
+                        {
+                            string aiContent = choices[0].GetProperty("message").GetProperty("content").GetString();
+                            
+                            // Clean up markdown if present
+                            aiContent = aiContent.Replace("```json", "").Replace("```", "").Trim();
+
+                            try
+                            {
+                                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                                return JsonSerializer.Deserialize<DietitianSupportResponse>(aiContent, options);
+                            }
+                            catch (JsonException)
+                            {
+                                if (attempt < maxRetries) continue;
+                                return CreateFallbackResponse("JSON Parsing Error");
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    if (attempt < maxRetries) { await Task.Delay(1000 * attempt); continue; }
+                    return CreateFallbackResponse("Connection Error: " + ex.Message);
+                }
+            }
+
+            return CreateFallbackResponse("Service Unavailable");
+        }
+
+        private DietitianSupportResponse CreateFallbackResponse(string reason)
+        {
+            return new DietitianSupportResponse
+            {
+                AnalysisSummary = "AI servisine şu anda ulaşılamıyor.",
+                NutritionComment = "Lütfen manuel değerlendirme yapınız.",
+                DailyRecommendations = new List<string> { "Sistem bağlantısı kontrol ediliyor." },
+                Warnings = new List<string> { reason },
+                DietitianNoteSuggestion = "Otomatik not oluşturulamadı."
+            };
         }
     }
 }

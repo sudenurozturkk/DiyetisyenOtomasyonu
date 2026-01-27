@@ -5,595 +5,636 @@ using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
-using DevExpress.XtraTab;
 using DiyetisyenOtomasyonu.Domain;
 using DiyetisyenOtomasyonu.Infrastructure.Services;
 using DiyetisyenOtomasyonu.Infrastructure.Security;
-using DiyetisyenOtomasyonu.Shared;
+using DiyetisyenOtomasyonu.Infrastructure.Repositories;
 using PatientEntity = DiyetisyenOtomasyonu.Domain.Patient;
 
 namespace DiyetisyenOtomasyonu.Forms.Doctor
 {
-    /// <summary>
-    /// Hasta Yönetimi - Professional Modern Tasarım
-    /// Sol: Hasta Listesi | Sağ: Kayıt Formu
-    /// </summary>
     public partial class FrmPatients : XtraForm
     {
+        private readonly PatientRepository _patientRepository;
         private readonly PatientService _patientService;
         private List<PatientEntity> _patients;
+        private List<PatientEntity> _filteredPatients;
         private PatientEntity _selectedPatient;
 
-        #region Colors
-        private readonly Color PrimaryGreen = ColorTranslator.FromHtml("#0D9488");
-        private readonly Color DarkGreen = ColorTranslator.FromHtml("#0F766E");
-        private readonly Color LightGreen = ColorTranslator.FromHtml("#CCFBF1");
-        private readonly Color SuccessGreen = ColorTranslator.FromHtml("#22C55E");
-        private readonly Color SuccessBg = ColorTranslator.FromHtml("#DCFCE7");
-        private readonly Color DangerRed = ColorTranslator.FromHtml("#EF4444");
-        private readonly Color DangerBg = ColorTranslator.FromHtml("#FEE2E2");
-        private readonly Color WarningOrange = ColorTranslator.FromHtml("#F97316");
-        private readonly Color WarningBg = ColorTranslator.FromHtml("#FED7AA");
-        private readonly Color WarningYellow = ColorTranslator.FromHtml("#EAB308");
-        private readonly Color WarningYellowBg = ColorTranslator.FromHtml("#FEF9C3");
-        private readonly Color PurpleColor = ColorTranslator.FromHtml("#9333EA");
-        private readonly Color BackgroundLight = ColorTranslator.FromHtml("#F8FAFC");
-        private readonly Color CardWhite = Color.White;
-        private readonly Color BorderGray = ColorTranslator.FromHtml("#E2E8F0");
-        private readonly Color TextDark = ColorTranslator.FromHtml("#1E293B");
-        private readonly Color TextMedium = ColorTranslator.FromHtml("#64748B");
-        private readonly Color TextLight = ColorTranslator.FromHtml("#94A3B8");
-        #endregion
+        // Controls
+        private TextEdit txtAdSoyad, txtKullaniciAdi, txtSifre, txtSearch;
+        private MemoEdit txtKronikHastalik, txtIlaclar, txtAlerjiler;
+        private ComboBoxEdit cmbCinsiyet, cmbLifestyle, cmbActivity;
+        private SpinEdit spnYas, spnBoy, spnKilo;
+        private SimpleButton btnKaydet, btnTemizle, btnYenile, btnSil;
+        private Panel pnlBMI, pnlKalori, pnlPatientList;
+        private Label lblToplam;
 
-        #region Controls
-        private Panel pnlPatientList;
-        private TextEdit txtSearch;
-        private XtraTabControl tabControl;
-        private TextEdit txtAdSoyad, txtKullaniciAdi, txtParola;
-        private RadioButton rbErkek, rbKadin;
-        private SpinEdit spnYas, spnBoy, spnKilo, spnHedefKilo;
-        private ComboBoxEdit cmbLifestyle, cmbActivity;
-        private Label lblTotalCount, lblOverweightCount, lblNormalCount, lblRiskCount;
-        private Label lblTdeeValue, lblTdeeHedef;
-        #endregion
+        // Colors
+        private readonly Color Primary = Color.FromArgb(16, 185, 129);
+        private readonly Color PrimaryDark = Color.FromArgb(5, 150, 105);
+        private readonly Color PrimaryLight = Color.FromArgb(220, 252, 231);
+        private readonly Color Secondary = Color.FromArgb(99, 102, 241);
+        private readonly Color Accent = Color.FromArgb(251, 146, 60);
+        private readonly Color Success = Color.FromArgb(34, 197, 94);
+        private readonly Color Danger = Color.FromArgb(239, 68, 68);
+        private readonly Color Warning = Color.FromArgb(251, 191, 36);
+        private readonly Color Info = Color.FromArgb(59, 130, 246);
+        private readonly Color Pink = Color.FromArgb(236, 72, 153);
+        private readonly Color Purple = Color.FromArgb(139, 92, 246);
+        private readonly Color Cyan = Color.FromArgb(6, 182, 212);
+        private readonly Color CardBg = Color.White;
+        private readonly Color BgColor = Color.FromArgb(248, 250, 252);
+        private readonly Color TextDark = Color.FromArgb(30, 41, 59);
+        private readonly Color TextGray = Color.FromArgb(100, 116, 139);
+        private readonly Color Border = Color.FromArgb(226, 232, 240);
 
         public FrmPatients()
         {
-            InitializeComponent();
+            _patientRepository = new PatientRepository();
             _patientService = new PatientService();
-            SetupUI();
-            LoadPatients();
+            InitializeComponent();
+            BuildUI();
+            this.Load += (s, e) => LoadPatients();
         }
 
         private void InitializeComponent()
         {
             this.SuspendLayout();
-            this.ClientSize = new Size(1200, 750);
-            this.Name = "FrmPatients";
-            this.Text = "Hasta Yönetimi";
+            this.ClientSize = new Size(1300, 800);
             this.FormBorderStyle = FormBorderStyle.None;
-            this.BackColor = BackgroundLight;
+            this.BackColor = BgColor;
             this.ResumeLayout(false);
         }
 
-        private void SetupUI()
+        private void BuildUI()
         {
-            this.Padding = new Padding(25);
-
-            // Header
-            CreateHeader();
-
-            // Summary Cards
-            CreateSummaryCards();
-
-            // Toolbar
-            CreateToolbar();
-
-            // Main Content
-            var mainSplit = new SplitContainer
+            // Main layout
+            var main = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                Orientation = Orientation.Vertical,
-                FixedPanel = FixedPanel.Panel2,
-                SplitterDistance = 600,
-                SplitterWidth = 25,
-                BackColor = BackgroundLight
+                ColumnCount = 2,
+                RowCount = 1,
+                Padding = new Padding(15),
+                BackColor = Color.Transparent
             };
-            mainSplit.Panel1.Padding = new Padding(0, 0, 10, 0);
-            mainSplit.Panel2.Padding = new Padding(10, 0, 0, 0);
+            main.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 400));
+            main.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
-            CreatePatientListPanel(mainSplit.Panel1);
-            CreateRightFormPanel(mainSplit.Panel2);
+            main.Controls.Add(BuildLeftPanel(), 0, 0);
+            main.Controls.Add(BuildRightPanel(), 1, 0);
 
-            this.Controls.Add(mainSplit);
+            this.Controls.Add(main);
         }
 
-        private void CreateHeader()
+        private Panel BuildLeftPanel()
         {
-            var pnlHeader = new Panel { Dock = DockStyle.Top, Height = 80, BackColor = CardWhite, Padding = new Padding(20) };
-            pnlHeader.Paint += (s, e) => DrawRoundedBorder(e.Graphics, pnlHeader.Width, pnlHeader.Height, 15);
+            var panel = new Panel { Dock = DockStyle.Fill, BackColor = CardBg, Margin = new Padding(0, 0, 8, 0) };
+            panel.Paint += (s, e) => PaintCard(e.Graphics, panel);
 
-            var lblIcon = new Label { Text = "👥", Font = new Font("Segoe UI", 24F), Location = new Point(20, 15), AutoSize = true };
-            pnlHeader.Controls.Add(lblIcon);
+            var content = new Panel { Dock = DockStyle.Fill, Padding = new Padding(20), BackColor = CardBg, AutoScroll = true };
 
-            var lblTitle = new Label { Text = "Hasta Yönetimi", Font = new Font("Segoe UI", 18F, FontStyle.Bold), ForeColor = PrimaryGreen, Location = new Point(70, 12), AutoSize = true };
-            pnlHeader.Controls.Add(lblTitle);
+            int y = 0;
 
-            var lblSubtitle = new Label { Text = "Hastalarınızı yönetin, yeni kayıt ekleyin ve bilgilerini güncelleyin.", Font = new Font("Segoe UI", 10F), ForeColor = TextMedium, Location = new Point(70, 42), AutoSize = true };
-            pnlHeader.Controls.Add(lblSubtitle);
-
-            this.Controls.Add(pnlHeader);
-        }
-
-        private void CreateSummaryCards()
-        {
-            var pnlCards = new TableLayoutPanel
+            // Title
+            var title = new Label
             {
-                Dock = DockStyle.Top,
-                Height = 100,
-                ColumnCount = 4,
-                Padding = new Padding(0, 15, 0, 15)
+                Text = "➕ YENİ HASTA KAYDI",
+                Font = new Font("Segoe UI", 14, FontStyle.Bold),
+                ForeColor = Primary,
+                Location = new Point(0, y),
+                AutoSize = true,
+                BackColor = Color.Transparent
             };
-            for (int i = 0; i < 4; i++) pnlCards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
+            content.Controls.Add(title);
+            y += 45;
 
-            var c1 = CreateSummaryCard("Toplam Hasta", "0", "👥", LightGreen, PrimaryGreen);
-            lblTotalCount = (Label)c1.Controls[2];
-            pnlCards.Controls.Add(c1, 0, 0);
+            // Fields
+            AddLabel(content, "Ad Soyad *", y); y += 22;
+            txtAdSoyad = AddTextBox(content, "Hasta adı soyadı", y); y += 45;
 
-            var c2 = CreateSummaryCard("Fazla Kilolu", "0", "⚠️", DangerBg, DangerRed);
-            lblOverweightCount = (Label)c2.Controls[2];
-            pnlCards.Controls.Add(c2, 1, 0);
+            AddLabel(content, "Kullanıcı Adı *", y); y += 22;
+            txtKullaniciAdi = AddTextBox(content, "kullaniciadi", y); y += 45;
 
-            var c3 = CreateSummaryCard("Normal Kilo", "0", "✅", SuccessBg, SuccessGreen);
-            lblNormalCount = (Label)c3.Controls[2];
-            pnlCards.Controls.Add(c3, 2, 0);
+            AddLabel(content, "Şifre *", y); y += 22;
+            txtSifre = AddTextBox(content, "••••••••", y, true); y += 45;
 
-            var c4 = CreateSummaryCard("Riskli (BMI>30)", "0", "⚡", WarningYellowBg, WarningYellow);
-            lblRiskCount = (Label)c4.Controls[2];
-            pnlCards.Controls.Add(c4, 3, 0);
+            // Cinsiyet + Yaş
+            AddLabel(content, "Cinsiyet", y);
+            content.Controls.Add(new Label { Text = "Yaş", Font = new Font("Segoe UI", 9), ForeColor = TextGray, Location = new Point(175, y), AutoSize = true, BackColor = Color.Transparent });
+            y += 22;
+            cmbCinsiyet = AddCombo(content, new[] { "Erkek", "Kadın" }, 0, y, 160);
+            spnYas = AddSpin(content, 1, 120, 30, 175, y, 160);
+            y += 45;
 
-            this.Controls.Add(pnlCards);
-        }
+            // Boy + Kilo
+            AddLabel(content, "Boy (cm)", y);
+            content.Controls.Add(new Label { Text = "Kilo (kg)", Font = new Font("Segoe UI", 9), ForeColor = TextGray, Location = new Point(175, y), AutoSize = true, BackColor = Color.Transparent });
+            y += 22;
+            spnBoy = AddSpin(content, 100, 220, 170, 0, y, 160);
+            spnKilo = AddSpin(content, 30, 250, 70, 175, y, 160);
+            y += 45;
 
-        private Panel CreateSummaryCard(string title, string value, string icon, Color bg, Color fg)
-        {
-            var pnl = new Panel { Dock = DockStyle.Fill, Margin = new Padding(5), BackColor = CardWhite, Cursor = Cursors.Hand };
-            pnl.Paint += (s, e) =>
-            {
-                DrawRoundedBorder(e.Graphics, pnl.Width, pnl.Height, 12);
-                // Left color bar
-                using (var brush = new SolidBrush(fg))
-                    e.Graphics.FillRectangle(brush, 0, 10, 5, pnl.Height - 20);
-            };
+            // Lifestyle + Activity
+            AddLabel(content, "Yaşam Tarzı", y);
+            content.Controls.Add(new Label { Text = "Aktivite", Font = new Font("Segoe UI", 9), ForeColor = TextGray, Location = new Point(175, y), AutoSize = true, BackColor = Color.Transparent });
+            y += 22;
+            cmbLifestyle = AddCombo(content, new[] { "Ofis Çalışanı", "Öğrenci", "Ev Hanımı", "Serbest", "Sporcu", "Emekli" }, 0, y, 160);
+            cmbActivity = AddCombo(content, new[] { "Hareketsiz", "Az Hareketli", "Orta", "Aktif", "Çok Aktif" }, 2, y, 160);
+            cmbActivity.Location = new Point(175, y);
+            y += 45;
 
-            var lblIcon = new Label { Text = icon, Font = new Font("Segoe UI", 18F), ForeColor = fg, Location = new Point(15, 12), AutoSize = true };
-            var lblTitle = new Label { Text = title, Font = new Font("Segoe UI", 9F), ForeColor = TextMedium, Location = new Point(55, 10), AutoSize = true };
-            var lblValue = new Label { Text = value, Font = new Font("Segoe UI", 20F, FontStyle.Bold), ForeColor = TextDark, Location = new Point(55, 32), AutoSize = true };
+            // Kronik Hastalıklar
+            AddLabel(content, "Kronik Hastalıklar", y); y += 22;
+            txtKronikHastalik = new MemoEdit { Location = new Point(0, y), Size = new Size(335, 50) };
+            txtKronikHastalik.Properties.NullValuePrompt = "Diyabet, tansiyon, kalp vb.";
+            content.Controls.Add(txtKronikHastalik);
+            y += 55;
 
-            pnl.Controls.Add(lblIcon);
-            pnl.Controls.Add(lblTitle);
-            pnl.Controls.Add(lblValue);
+            // Kullanılan İlaçlar
+            AddLabel(content, "Kullanılan İlaçlar", y); y += 22;
+            txtIlaclar = new MemoEdit { Location = new Point(0, y), Size = new Size(335, 50) };
+            txtIlaclar.Properties.NullValuePrompt = "Metformin, Aspirin vb.";
+            content.Controls.Add(txtIlaclar);
+            y += 55;
 
-            // Hover effect
-            pnl.MouseEnter += (s, e) => pnl.BackColor = bg;
-            pnl.MouseLeave += (s, e) => pnl.BackColor = CardWhite;
-            foreach (Control c in pnl.Controls) { c.MouseEnter += (s, e) => pnl.BackColor = bg; c.MouseLeave += (s, e) => pnl.BackColor = CardWhite; }
+            // Alerjiler
+            AddLabel(content, "Alerjiler", y); y += 22;
+            txtAlerjiler = new MemoEdit { Location = new Point(0, y), Size = new Size(335, 50) };
+            txtAlerjiler.Properties.NullValuePrompt = "Fıstık, gluten, laktoz vb.";
+            content.Controls.Add(txtAlerjiler);
+            y += 60;
 
-            return pnl;
-        }
-
-        private void CreateToolbar()
-        {
-            var pnl = new Panel { Dock = DockStyle.Top, Height = 60, Padding = new Padding(0, 0, 0, 15) };
-
-            // Search
-            txtSearch = new TextEdit
-            {
-                Location = new Point(0, 5),
-                Size = new Size(280, 40),
-                Properties = { NullText = "🔍 Hasta ara (isim veya ID)...", AutoHeight = false, Appearance = { Font = new Font("Segoe UI", 10F), BackColor = CardWhite } }
-            };
-            txtSearch.TextChanged += (s, e) => FilterPatients();
-            pnl.Controls.Add(txtSearch);
+            // BMI + Kalori cards
+            pnlBMI = CreateCard("BMI", "24.2", "Normal", Primary, 0, y);
+            content.Controls.Add(pnlBMI);
+            pnlKalori = CreateCard("KALORİ", "2000", "kcal/gün", Accent, 175, y);
+            content.Controls.Add(pnlKalori);
+            y += 100;
 
             // Buttons
-            var btnRefresh = CreateToolbarButton("↻ Yenile", 300, PrimaryGreen, Color.White);
-            btnRefresh.Click += (s, e) => LoadPatients();
-            pnl.Controls.Add(btnRefresh);
+            btnKaydet = CreateBtn("💾 KAYDET", Primary, 0, y, 160);
+            btnKaydet.Click += BtnKaydet_Click;
+            content.Controls.Add(btnKaydet);
 
-            var btnDiet = CreateToolbarButton("📋 Diyet Ata", 400, CardWhite, TextDark);
-            pnl.Controls.Add(btnDiet);
+            btnTemizle = CreateBtn("🔄 TEMİZLE", Secondary, 170, y, 160);
+            btnTemizle.Click += (s, e) => ClearForm();
+            content.Controls.Add(btnTemizle);
 
-            var btnReport = CreateToolbarButton("📈 Rapor Gör", 510, CardWhite, TextDark);
-            pnl.Controls.Add(btnReport);
+            // Events
+            cmbCinsiyet.SelectedIndexChanged += (s, e) => CalcMetrics();
+            spnYas.EditValueChanged += (s, e) => CalcMetrics();
+            spnBoy.EditValueChanged += (s, e) => CalcMetrics();
+            spnKilo.EditValueChanged += (s, e) => CalcMetrics();
+            cmbActivity.SelectedIndexChanged += (s, e) => CalcMetrics();
 
-            var btnDelete = CreateToolbarButton("🗑️ Sil", 620, DangerBg, DangerRed);
-            btnDelete.Click += BtnSil_Click;
-            pnl.Controls.Add(btnDelete);
-
-            this.Controls.Add(pnl);
+            panel.Controls.Add(content);
+            CalcMetrics();
+            return panel;
         }
 
-        private SimpleButton CreateToolbarButton(string text, int x, Color bg, Color fg)
+        private Panel BuildRightPanel()
         {
-            return new SimpleButton
+            var panel = new Panel { Dock = DockStyle.Fill, BackColor = CardBg, Margin = new Padding(8, 0, 0, 0) };
+            panel.Paint += (s, e) => PaintCard(e.Graphics, panel);
+
+            // Patient list - ÖNCE EKLE (Fill olduğu için en son eklenmeli ama önce tanımla)
+            pnlPatientList = new Panel { Dock = DockStyle.Fill, AutoScroll = true, BackColor = CardBg };
+
+            // Column headers
+            var headers = new Panel { Dock = DockStyle.Top, Height = 35, BackColor = Color.FromArgb(248, 250, 252) };
+            headers.Paint += (s, e) => e.Graphics.DrawLine(new Pen(Border), 0, 34, headers.Width, 34);
+            
+            int[] cols = { 15, 180, 290, 360, 410, 470 };
+            string[] titles = { "HASTA", "KULLANICI", "CİNSİYET", "YAŞ", "KİLO", "BMI" };
+            for (int i = 0; i < titles.Length; i++)
             {
-                Text = text,
-                Location = new Point(x, 5),
-                Size = new Size(100, 40),
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                Appearance = { BackColor = bg, ForeColor = fg },
-                Cursor = Cursors.Hand
-            };
-        }
+                headers.Controls.Add(new Label
+                {
+                    Text = titles[i],
+                    Font = new Font("Segoe UI", 8, FontStyle.Bold),
+                    ForeColor = TextGray,
+                    Location = new Point(cols[i], 10),
+                    AutoSize = true,
+                    BackColor = Color.Transparent
+                });
+            }
 
-        private void CreatePatientListPanel(Panel parent)
-        {
-            var card = new Panel { Dock = DockStyle.Fill, BackColor = CardWhite, Padding = new Padding(20) };
-            card.Paint += (s, e) => DrawRoundedBorder(e.Graphics, card.Width, card.Height, 20);
+            // Toolbar
+            var toolbar = new Panel { Dock = DockStyle.Top, Height = 50, BackColor = CardBg, Padding = new Padding(15, 8, 15, 8) };
 
-            // Header
-            var pnlHeader = new Panel { Dock = DockStyle.Top, Height = 50 };
-            var lblTitle = new Label { Text = "📋 HASTA LİSTESİ", Font = new Font("Segoe UI", 14F, FontStyle.Bold), ForeColor = TextDark, Location = new Point(0, 10), AutoSize = true };
-            pnlHeader.Controls.Add(lblTitle);
-            card.Controls.Add(pnlHeader);
-
-            // Column Headers
-            var pnlCols = new Panel { Dock = DockStyle.Top, Height = 35, BackColor = BackgroundLight };
-            pnlCols.Controls.Add(new Label { Text = "HASTA BİLGİLERİ", Font = new Font("Segoe UI", 8F, FontStyle.Bold), ForeColor = TextLight, Location = new Point(10, 10), AutoSize = true });
-            pnlCols.Controls.Add(new Label { Text = "BMI", Font = new Font("Segoe UI", 8F, FontStyle.Bold), ForeColor = TextLight, Location = new Point(pnlCols.Width - 60, 10), Anchor = AnchorStyles.Right, AutoSize = true });
-            card.Controls.Add(pnlCols);
-
-            // List
-            pnlPatientList = new Panel { Dock = DockStyle.Fill, AutoScroll = true, BackColor = CardWhite };
-            card.Controls.Add(pnlPatientList);
-
-            parent.Controls.Add(card);
-        }
-
-        private void CreateRightFormPanel(Panel parent)
-        {
-            var card = new Panel { Dock = DockStyle.Fill, BackColor = CardWhite, Padding = new Padding(25) };
-            card.Paint += (s, e) => DrawRoundedBorder(e.Graphics, card.Width, card.Height, 20);
-
-            // Header
-            var lblHeader = new Label { Text = "📝 Yeni Hasta Kaydı", Font = new Font("Segoe UI", 16F, FontStyle.Bold), ForeColor = PrimaryGreen, Dock = DockStyle.Top, Height = 45 };
-            card.Controls.Add(lblHeader);
-
-            // Tabs
-            tabControl = new XtraTabControl { Dock = DockStyle.Fill };
-            tabControl.AppearancePage.Header.Font = new Font("Segoe UI", 10F);
-
-            var tab1 = new XtraTabPage { Text = "Kimlik & Fiziksel", BackColor = CardWhite };
-            CreateTab1Content(tab1);
-            tabControl.TabPages.Add(tab1);
-
-            var tab2 = new XtraTabPage { Text = "Yaşam & Tıbbi", BackColor = CardWhite };
-            CreateTab2Content(tab2);
-            tabControl.TabPages.Add(tab2);
-
-            card.Controls.Add(tabControl);
-
-            // Save Button
-            var btnSave = new SimpleButton
+            lblToplam = new Label
             {
-                Text = "💾 KAYDET",
-                Dock = DockStyle.Bottom,
-                Height = 55,
-                Font = new Font("Segoe UI", 13F, FontStyle.Bold),
-                Appearance = { BackColor = PurpleColor, ForeColor = Color.White },
-                Cursor = Cursors.Hand
+                Text = "Toplam: 0 hasta",
+                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                ForeColor = TextDark,
+                Location = new Point(15, 15),
+                AutoSize = true,
+                BackColor = Color.Transparent
             };
-            btnSave.Click += BtnEkle_Click;
-            card.Controls.Add(btnSave);
+            toolbar.Controls.Add(lblToplam);
 
-            parent.Controls.Add(card);
+            txtSearch = new TextEdit { Location = new Point(180, 10), Size = new Size(200, 30) };
+            txtSearch.Properties.NullValuePrompt = "🔍 Ara...";
+            txtSearch.EditValueChanged += (s, e) => FilterPatients();
+            toolbar.Controls.Add(txtSearch);
+
+            btnYenile = CreateBtn("🔄", Info, 395, 8, 40);
+            btnYenile.Click += (s, e) => LoadPatients();
+            toolbar.Controls.Add(btnYenile);
+
+            btnSil = CreateBtn("🗑️", Danger, 445, 8, 40);
+            btnSil.Click += BtnSil_Click;
+            toolbar.Controls.Add(btnSil);
+
+            // Title bar
+            var titleBar = new Panel { Dock = DockStyle.Top, Height = 50, BackColor = Primary };
+            titleBar.Controls.Add(new Label
+            {
+                Text = "📋 HASTA LİSTESİ",
+                Font = new Font("Segoe UI", 14, FontStyle.Bold),
+                ForeColor = Color.White,
+                Location = new Point(20, 12),
+                AutoSize = true,
+                BackColor = Color.Transparent
+            });
+
+            // EKLEME SIRASI ÖNEMLİ - Dock.Fill en son eklenmeli
+            panel.Controls.Add(pnlPatientList);  // Fill - en son
+            panel.Controls.Add(headers);          // Top
+            panel.Controls.Add(toolbar);          // Top
+            panel.Controls.Add(titleBar);         // Top - en üstte
+
+            return panel;
         }
 
-        private void CreateTab1Content(XtraTabPage page)
-        {
-            var scroll = new Panel { Dock = DockStyle.Fill, AutoScroll = true, Padding = new Padding(10) };
-
-            int y = 10;
-            scroll.Controls.Add(CreateInputRow("Ad Soyad", txtAdSoyad = new TextEdit { Properties = { NullText = "Hastanın adı ve soyadı" } }, ref y));
-            scroll.Controls.Add(CreateInputRow("Kullanıcı Adı", txtKullaniciAdi = new TextEdit { Properties = { NullText = "Giriş için kullanıcı adı" } }, ref y));
-            scroll.Controls.Add(CreateInputRow("Parola", txtParola = new TextEdit { Properties = { UseSystemPasswordChar = true, NullText = "••••••" } }, ref y));
-
-            // Gender
-            var pnlGender = new Panel { Location = new Point(10, y), Size = new Size(350, 70) };
-            pnlGender.Controls.Add(new Label { Text = "Cinsiyet", Font = new Font("Segoe UI", 10F, FontStyle.Bold), ForeColor = TextMedium, Location = new Point(0, 0), AutoSize = true });
-            rbErkek = new RadioButton { Text = "Erkek", Location = new Point(5, 30), Checked = true, Font = new Font("Segoe UI", 10F), AutoSize = true };
-            rbKadin = new RadioButton { Text = "Kadın", Location = new Point(100, 30), Font = new Font("Segoe UI", 10F), AutoSize = true };
-            pnlGender.Controls.Add(rbErkek);
-            pnlGender.Controls.Add(rbKadin);
-            scroll.Controls.Add(pnlGender);
-            y += 75;
-
-            // Numbers
-            scroll.Controls.Add(CreateNumberRow("Yaş", spnYas = new SpinEdit { Properties = { MinValue = 1, MaxValue = 120 }, Value = 30 }, ref y));
-            scroll.Controls.Add(CreateNumberRow("Boy (cm)", spnBoy = new SpinEdit { Properties = { MinValue = 50, MaxValue = 250 }, Value = 170 }, ref y));
-            spnBoy.EditValueChanged += (s, e) => UpdateTDEE();
-            scroll.Controls.Add(CreateNumberRow("Kilo (kg)", spnKilo = new SpinEdit { Properties = { MinValue = 20, MaxValue = 300 }, Value = 70 }, ref y));
-            spnKilo.EditValueChanged += (s, e) => UpdateTDEE();
-            scroll.Controls.Add(CreateNumberRow("Hedef Kilo", spnHedefKilo = new SpinEdit { Properties = { MinValue = 20, MaxValue = 300 }, Value = 65 }, ref y));
-
-            // TDEE Box
-            var pnlTdee = new Panel { Location = new Point(10, y), Size = new Size(350, 70), BackColor = LightGreen };
-            pnlTdee.Paint += (s, e) => DrawRoundedBorder(e.Graphics, pnlTdee.Width, pnlTdee.Height, 12, PrimaryGreen);
-            lblTdeeValue = new Label { Text = "2000 kcal", Font = new Font("Segoe UI", 16F, FontStyle.Bold), ForeColor = PrimaryGreen, Location = new Point(15, 12), AutoSize = true };
-            lblTdeeHedef = new Label { Text = "Günlük Kalori İhtiyacı (TDEE)", Font = new Font("Segoe UI", 9F), ForeColor = TextDark, Location = new Point(15, 42), AutoSize = true };
-            pnlTdee.Controls.Add(lblTdeeValue);
-            pnlTdee.Controls.Add(lblTdeeHedef);
-            scroll.Controls.Add(pnlTdee);
-
-            page.Controls.Add(scroll);
-        }
-
-        private void CreateTab2Content(XtraTabPage page)
-        {
-            var scroll = new Panel { Dock = DockStyle.Fill, AutoScroll = true, Padding = new Padding(10) };
-            int y = 10;
-
-            cmbLifestyle = new ComboBoxEdit();
-            cmbLifestyle.Properties.Items.AddRange(new[] { "Öğrenci", "Ofis Çalışanı", "Serbest Meslek", "Sporcu", "Emekli" });
-            cmbLifestyle.SelectedIndex = 1;
-            scroll.Controls.Add(CreateComboRow("Yaşam Tarzı", cmbLifestyle, ref y));
-
-            cmbActivity = new ComboBoxEdit();
-            cmbActivity.Properties.Items.AddRange(new[] { "Hareketsiz", "Hafif Aktif", "Orta Aktif", "Çok Aktif", "Ekstra Aktif" });
-            cmbActivity.SelectedIndex = 1;
-            cmbActivity.SelectedIndexChanged += (s, e) => UpdateTDEE();
-            scroll.Controls.Add(CreateComboRow("Aktivite Seviyesi", cmbActivity, ref y));
-
-            page.Controls.Add(scroll);
-        }
-
-        private Panel CreateInputRow(string label, TextEdit input, ref int y)
-        {
-            var pnl = new Panel { Location = new Point(10, y), Size = new Size(350, 70) };
-            pnl.Controls.Add(new Label { Text = label, Font = new Font("Segoe UI", 10F, FontStyle.Bold), ForeColor = TextMedium, Location = new Point(0, 0), AutoSize = true });
-            input.Location = new Point(0, 28);
-            input.Size = new Size(340, 38);
-            input.Properties.AutoHeight = false;
-            input.Font = new Font("Segoe UI", 10F);
-            input.Properties.Appearance.BackColor = BackgroundLight;
-            pnl.Controls.Add(input);
-            y += 75;
-            return pnl;
-        }
-
-        private Panel CreateNumberRow(string label, SpinEdit input, ref int y)
-        {
-            var pnl = new Panel { Location = new Point(10, y), Size = new Size(350, 70) };
-            pnl.Controls.Add(new Label { Text = label, Font = new Font("Segoe UI", 10F, FontStyle.Bold), ForeColor = TextMedium, Location = new Point(0, 0), AutoSize = true });
-            input.Location = new Point(0, 28);
-            input.Size = new Size(150, 38);
-            input.Properties.AutoHeight = false;
-            input.Font = new Font("Segoe UI", 10F);
-            input.Properties.Appearance.BackColor = BackgroundLight;
-            pnl.Controls.Add(input);
-            y += 75;
-            return pnl;
-        }
-
-        private Panel CreateComboRow(string label, ComboBoxEdit input, ref int y)
-        {
-            var pnl = new Panel { Location = new Point(10, y), Size = new Size(350, 70) };
-            pnl.Controls.Add(new Label { Text = label, Font = new Font("Segoe UI", 10F, FontStyle.Bold), ForeColor = TextMedium, Location = new Point(0, 0), AutoSize = true });
-            input.Location = new Point(0, 28);
-            input.Size = new Size(340, 38);
-            input.Properties.AutoHeight = false;
-            input.Font = new Font("Segoe UI", 10F);
-            input.Properties.Appearance.BackColor = BackgroundLight;
-            pnl.Controls.Add(input);
-            y += 75;
-            return pnl;
-        }
-
-        #region Logic
         private void LoadPatients()
         {
             try
             {
-                _patients = _patientService.GetPatientsByDoctor(AuthContext.UserId);
-                PopulatePatientList();
-                UpdateSummaryCards();
+                _patients = _patientRepository.GetByDoctorId(AuthContext.UserId).ToList();
+                _filteredPatients = new List<PatientEntity>(_patients);
+                lblToplam.Text = $"Toplam: {_patients.Count} hasta";
+                RenderList();
             }
             catch (Exception ex)
             {
-                XtraMessageBox.Show("Hastalar yüklenirken hata: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                XtraMessageBox.Show($"Hata: {ex.Message}", "Veritabanı Hatası");
             }
         }
 
         private void FilterPatients()
         {
-            if (_patients == null) return;
-            string query = txtSearch.Text?.ToLower() ?? "";
-            var filtered = _patients.Where(p => p.AdSoyad.ToLower().Contains(query) || p.Id.ToString().Contains(query)).ToList();
-            PopulatePatientList(filtered);
+            var s = txtSearch.Text?.Trim().ToLower() ?? "";
+            _filteredPatients = string.IsNullOrEmpty(s) ? new List<PatientEntity>(_patients) :
+                _patients.Where(p => (p.AdSoyad?.ToLower().Contains(s) ?? false) || (p.KullaniciAdi?.ToLower().Contains(s) ?? false) || p.Id.ToString().Contains(s)).ToList();
+            RenderList();
         }
 
-        private void PopulatePatientList(List<PatientEntity> list = null)
+        private void RenderList()
         {
-            pnlPatientList.SuspendLayout();
             pnlPatientList.Controls.Clear();
-            var patients = list ?? _patients;
-            if (patients == null) return;
 
-            foreach (var p in patients)
+            if (_filteredPatients == null || _filteredPatients.Count == 0)
             {
-                var row = CreatePatientRow(p);
-                pnlPatientList.Controls.Add(row);
-            }
-            pnlPatientList.ResumeLayout(true);
-        }
-
-        private Panel CreatePatientRow(PatientEntity patient)
-        {
-            var wrapper = new Panel { Dock = DockStyle.Top, Height = 75, Padding = new Padding(0, 0, 0, 10) };
-            var row = new Panel { Dock = DockStyle.Fill, BackColor = BackgroundLight, Cursor = Cursors.Hand };
-            row.Paint += (s, e) => DrawRoundedBorder(e.Graphics, row.Width, row.Height, 12);
-
-            // Avatar
-            Color avatarColor = GetBmiColor(patient.BMI);
-            string initials = GetInitials(patient.AdSoyad);
-            var pnlAvatar = new Panel { Location = new Point(12, 10), Size = new Size(45, 45) };
-            pnlAvatar.Paint += (s, e) =>
-            {
-                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                using (var brush = new SolidBrush(avatarColor)) e.Graphics.FillEllipse(brush, 0, 0, 44, 44);
-                using (var font = new Font("Segoe UI", 11F, FontStyle.Bold))
-                using (var brush = new SolidBrush(Color.White))
-                using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
-                    e.Graphics.DrawString(initials, font, brush, new Rectangle(0, 0, 45, 45), sf);
-            };
-            row.Controls.Add(pnlAvatar);
-
-            // Name
-            row.Controls.Add(new Label { Text = patient.AdSoyad, Font = new Font("Segoe UI", 11F, FontStyle.Bold), ForeColor = TextDark, Location = new Point(70, 10), AutoSize = true });
-
-            // Details
-            row.Controls.Add(new Label { Text = $"{patient.Yas} yaş | {patient.Boy} cm | {patient.GuncelKilo} kg", Font = new Font("Segoe UI", 9F), ForeColor = TextMedium, Location = new Point(70, 32), AutoSize = true });
-
-            // BMI
-            row.Controls.Add(new Label { Text = $"{patient.BMI:F1}", Font = new Font("Segoe UI", 14F, FontStyle.Bold), ForeColor = avatarColor, Location = new Point(row.Width - 70, 18), Anchor = AnchorStyles.Right, AutoSize = true });
-
-            // Selection
-            bool isSelected = _selectedPatient != null && _selectedPatient.Id == patient.Id;
-            if (isSelected) row.BackColor = LightGreen;
-
-            row.Click += (s, e) => SelectPatient(patient);
-            foreach (Control c in row.Controls) c.Click += (s, e) => SelectPatient(patient);
-
-            wrapper.Controls.Add(row);
-            return wrapper;
-        }
-
-        private void SelectPatient(PatientEntity patient)
-        {
-            _selectedPatient = patient;
-            PopulatePatientList();
-
-            txtAdSoyad.Text = patient.AdSoyad;
-            txtKullaniciAdi.Text = patient.KullaniciAdi;
-            txtParola.Text = "";
-            rbErkek.Checked = patient.Cinsiyet == "Erkek";
-            rbKadin.Checked = patient.Cinsiyet == "Kadın";
-            spnYas.Value = patient.Yas;
-            spnBoy.Value = (decimal)patient.Boy;
-            spnKilo.Value = (decimal)patient.GuncelKilo;
-
-            SetComboValue(cmbLifestyle, patient.LifestyleDescription);
-            SetComboValue(cmbActivity, patient.ActivityDescription);
-            UpdateTDEE();
-        }
-
-        private void SetComboValue(ComboBoxEdit cmb, string value)
-        {
-            if (string.IsNullOrEmpty(value)) return;
-            foreach (var item in cmb.Properties.Items)
-                if (item.ToString() == value) { cmb.SelectedItem = item; return; }
-        }
-
-        private void UpdateSummaryCards()
-        {
-            if (_patients == null) return;
-            lblTotalCount.Text = _patients.Count.ToString();
-            lblOverweightCount.Text = _patients.Count(p => p.BMI >= 25 && p.BMI < 30).ToString();
-            lblNormalCount.Text = _patients.Count(p => p.BMI >= 18.5 && p.BMI < 25).ToString();
-            lblRiskCount.Text = _patients.Count(p => p.BMI >= 30).ToString();
-        }
-
-        private void UpdateTDEE()
-        {
-            double weight = (double)spnKilo.Value;
-            double height = (double)spnBoy.Value;
-            double age = (double)spnYas.Value;
-            double bmr = 10 * weight + 6.25 * height - 5 * age + (rbErkek.Checked ? 5 : -161);
-            double[] multipliers = { 1.2, 1.375, 1.55, 1.725, 1.9 };
-            int idx = cmbActivity?.SelectedIndex ?? 1;
-            double tdee = bmr * multipliers[Math.Min(idx, multipliers.Length - 1)];
-            if (lblTdeeValue != null) lblTdeeValue.Text = $"{(int)tdee} kcal";
-        }
-
-        private void BtnEkle_Click(object sender, EventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(txtAdSoyad.Text) || string.IsNullOrWhiteSpace(txtKullaniciAdi.Text))
-            {
-                XtraMessageBox.Show("Lütfen Ad Soyad ve Kullanıcı Adı alanlarını doldurun.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                pnlPatientList.Controls.Add(new Label { Text = "Hasta bulunamadı", Font = new Font("Segoe UI", 11), ForeColor = TextGray, Location = new Point(180, 50), AutoSize = true });
                 return;
             }
 
-            try
+            int y = 5;
+            foreach (var p in _filteredPatients)
             {
-                var patient = new PatientEntity
-                {
-                    AdSoyad = txtAdSoyad.Text.Trim(),
-                    KullaniciAdi = txtKullaniciAdi.Text.Trim(),
-                    ParolaHash = string.IsNullOrEmpty(txtParola.Text) ? "123456" : txtParola.Text,
-                    Cinsiyet = rbErkek.Checked ? "Erkek" : "Kadın",
-                    Yas = (int)spnYas.Value,
-                    Boy = (double)spnBoy.Value,
-                    GuncelKilo = (double)spnKilo.Value,
-                    BaslangicKilosu = (double)spnKilo.Value,
-                    DoctorId = AuthContext.UserId
-                };
-
-                _patientService.AddPatient(patient);
-                XtraMessageBox.Show("Hasta başarıyla kaydedildi!", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                LoadPatients();
-                ClearForm();
-            }
-            catch (Exception ex)
-            {
-                XtraMessageBox.Show("Hata: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var row = CreateRow(p, y);
+                pnlPatientList.Controls.Add(row);
+                y += 55;
             }
         }
 
-        private void BtnSil_Click(object sender, EventArgs e)
+        private Panel CreateRow(PatientEntity p, int y)
         {
-            if (_selectedPatient == null) { XtraMessageBox.Show("Lütfen silmek için bir hasta seçin.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
-            if (XtraMessageBox.Show($"{_selectedPatient.AdSoyad} hastasını silmek istediğinize emin misiniz?", "Onay", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            bool sel = _selectedPatient?.Id == p.Id;
+            var color = GetColor(p.Id);
+
+            var row = new Panel
             {
-                _patientService.DeletePatient(_selectedPatient.Id);
-                LoadPatients();
-                ClearForm();
-            }
+                Location = new Point(5, y),
+                Size = new Size(pnlPatientList.Width - 25, 50),
+                BackColor = sel ? PrimaryLight : CardBg,
+                Cursor = Cursors.Hand,
+                Tag = p
+            };
+            row.Paint += (s, e) =>
+            {
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                using (var pen = new Pen(sel ? Primary : Border, sel ? 2 : 1))
+                using (var path = RRect(new Rectangle(0, 0, row.Width - 1, row.Height - 1), 8))
+                    e.Graphics.DrawPath(pen, path);
+            };
+
+            // Avatar
+            var av = new Panel { Location = new Point(10, 5), Size = new Size(40, 40) };
+            av.Paint += (s, e) =>
+            {
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                e.Graphics.FillEllipse(new SolidBrush(color), 0, 0, 39, 39);
+                var init = GetInit(p.AdSoyad);
+                var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                e.Graphics.DrawString(init, new Font("Segoe UI", 11, FontStyle.Bold), Brushes.White, new RectangleF(0, 0, 40, 40), sf);
+            };
+            row.Controls.Add(av);
+
+            // Name
+            row.Controls.Add(new Label { Text = p.AdSoyad ?? "-", Font = new Font("Segoe UI", 10, FontStyle.Bold), ForeColor = TextDark, Location = new Point(58, 7), AutoSize = true, BackColor = Color.Transparent });
+            row.Controls.Add(new Label { Text = $"#{p.Id}", Font = new Font("Segoe UI", 8), ForeColor = TextGray, Location = new Point(58, 26), AutoSize = true, BackColor = Color.Transparent });
+
+            // Username
+            row.Controls.Add(new Label { Text = $"@{p.KullaniciAdi ?? "?"}", Font = new Font("Segoe UI", 9), ForeColor = TextGray, Location = new Point(175, 16), AutoSize = true, BackColor = Color.Transparent });
+
+            // Gender
+            bool m = p.Cinsiyet == "Erkek";
+            var badge = new Panel { Location = new Point(285, 13), Size = new Size(55, 24) };
+            badge.Paint += (s, e) =>
+            {
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                var c = m ? Info : Pink;
+                using (var brush = new SolidBrush(Color.FromArgb(40, c)))
+                using (var path = RRect(new Rectangle(0, 0, 54, 23), 10))
+                    e.Graphics.FillPath(brush, path);
+                var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                e.Graphics.DrawString(m ? "Erkek" : "Kadın", new Font("Segoe UI", 8, FontStyle.Bold), new SolidBrush(c), badge.ClientRectangle, sf);
+            };
+            row.Controls.Add(badge);
+
+            // Age
+            row.Controls.Add(new Label { Text = p.Yas.ToString(), Font = new Font("Segoe UI", 10), ForeColor = TextDark, Location = new Point(355, 16), AutoSize = true, BackColor = Color.Transparent });
+
+            // Weight
+            row.Controls.Add(new Label { Text = $"{p.GuncelKilo:F0}kg", Font = new Font("Segoe UI", 10), ForeColor = TextDark, Location = new Point(405, 16), AutoSize = true, BackColor = Color.Transparent });
+
+            // BMI
+            double bmi = p.BMI;
+            Color bc = bmi < 18.5 ? Info : bmi < 25 ? Success : bmi < 30 ? Warning : Danger;
+            row.Controls.Add(new Label { Text = $"{bmi:F1}", Font = new Font("Segoe UI", 10, FontStyle.Bold), ForeColor = bc, Location = new Point(465, 16), AutoSize = true, BackColor = Color.Transparent });
+
+            // Events
+            EventHandler click = (s, e) => Select(p);
+            row.Click += click;
+            foreach (Control c in row.Controls) { c.Click += click; c.Cursor = Cursors.Hand; }
+            row.MouseEnter += (s, e) => { if (!sel) row.BackColor = Color.FromArgb(248, 250, 252); };
+            row.MouseLeave += (s, e) => { row.BackColor = (_selectedPatient?.Id == p.Id) ? PrimaryLight : CardBg; };
+
+            return row;
+        }
+
+        private void Select(PatientEntity p)
+        {
+            _selectedPatient = p;
+            txtAdSoyad.Text = p.AdSoyad;
+            txtKullaniciAdi.Text = p.KullaniciAdi;
+            txtSifre.Text = "";
+            cmbCinsiyet.SelectedIndex = p.Cinsiyet == "Erkek" ? 0 : 1;
+            spnYas.Value = p.Yas;
+            spnBoy.Value = (decimal)p.Boy;
+            spnKilo.Value = (decimal)p.GuncelKilo;
+            cmbLifestyle.SelectedIndex = Math.Min((int)p.LifestyleType, 5);
+            cmbActivity.SelectedIndex = Math.Min((int)p.ActivityLevel, 4);
+            txtKronikHastalik.Text = p.MedicalHistory ?? "";
+            txtIlaclar.Text = p.Medications ?? "";
+            txtAlerjiler.Text = p.AllergiesText ?? "";
+            btnKaydet.Text = "💾 GÜNCELLE";
+            CalcMetrics();
+            RenderList();
         }
 
         private void ClearForm()
         {
             _selectedPatient = null;
-            txtAdSoyad.Text = txtKullaniciAdi.Text = txtParola.Text = "";
-            spnYas.Value = 30; spnBoy.Value = 170; spnKilo.Value = 70; spnHedefKilo.Value = 65;
-            rbErkek.Checked = true;
-            cmbLifestyle.SelectedIndex = 1; cmbActivity.SelectedIndex = 1;
-            PopulatePatientList();
+            txtAdSoyad.Text = txtKullaniciAdi.Text = txtSifre.Text = "";
+            txtKronikHastalik.Text = txtIlaclar.Text = txtAlerjiler.Text = "";
+            cmbCinsiyet.SelectedIndex = 0;
+            spnYas.Value = 30; spnBoy.Value = 170; spnKilo.Value = 70;
+            cmbLifestyle.SelectedIndex = 0; cmbActivity.SelectedIndex = 2;
+            btnKaydet.Text = "💾 KAYDET";
+            CalcMetrics();
+            RenderList();
         }
 
-        private Color GetBmiColor(double bmi) => bmi < 18.5 ? WarningOrange : bmi < 25 ? SuccessGreen : bmi < 30 ? WarningOrange : DangerRed;
-
-        private string GetInitials(string name)
+        private void BtnKaydet_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrEmpty(name)) return "??";
-            var parts = name.Split(' ');
-            return parts.Length >= 2 ? $"{parts[0][0]}{parts[1][0]}".ToUpper() : name.Substring(0, Math.Min(2, name.Length)).ToUpper();
-        }
-
-        private void DrawRoundedBorder(Graphics g, int w, int h, int r, Color? borderColor = null)
-        {
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            using (var path = new GraphicsPath())
+            if (string.IsNullOrWhiteSpace(txtAdSoyad.Text) || string.IsNullOrWhiteSpace(txtKullaniciAdi.Text))
             {
-                int d = r * 2;
-                path.AddArc(0, 0, d, d, 180, 90);
-                path.AddArc(w - d - 1, 0, d, d, 270, 90);
-                path.AddArc(w - d - 1, h - d - 1, d, d, 0, 90);
-                path.AddArc(0, h - d - 1, d, d, 90, 90);
-                path.CloseFigure();
-                using (var pen = new Pen(borderColor ?? BorderGray)) g.DrawPath(pen, path);
+                XtraMessageBox.Show("Ad Soyad ve Kullanıcı Adı zorunlu!", "Uyarı");
+                return;
+            }
+
+            try
+            {
+                if (_selectedPatient == null)
+                {
+                    if (string.IsNullOrWhiteSpace(txtSifre.Text) || txtSifre.Text.Length < 6)
+                    {
+                        XtraMessageBox.Show("Şifre en az 6 karakter!", "Uyarı");
+                        return;
+                    }
+
+                    var np = new PatientEntity
+                    {
+                        AdSoyad = txtAdSoyad.Text.Trim(),
+                        KullaniciAdi = txtKullaniciAdi.Text.Trim().ToLower(),
+                        ParolaHash = PasswordHasher.HashPassword(txtSifre.Text),
+                        Role = UserRole.Patient,
+                        DoctorId = AuthContext.UserId,
+                        Cinsiyet = cmbCinsiyet.SelectedIndex == 0 ? "Erkek" : "Kadın",
+                        Yas = (int)spnYas.Value,
+                        Boy = (double)spnBoy.Value,
+                        BaslangicKilosu = (double)spnKilo.Value,
+                        GuncelKilo = (double)spnKilo.Value,
+                        LifestyleType = (LifestyleType)cmbLifestyle.SelectedIndex,
+                        ActivityLevel = (ActivityLevel)cmbActivity.SelectedIndex,
+                        MedicalHistory = txtKronikHastalik.Text?.Trim(),
+                        Medications = txtIlaclar.Text?.Trim(),
+                        AllergiesText = txtAlerjiler.Text?.Trim(),
+                        KayitTarihi = DateTime.Now,
+                        AktifMi = true
+                    };
+                    _patientService.AddPatient(np);
+                    XtraMessageBox.Show("Hasta kaydedildi!", "Başarılı");
+                }
+                else
+                {
+                    _selectedPatient.AdSoyad = txtAdSoyad.Text.Trim();
+                    _selectedPatient.KullaniciAdi = txtKullaniciAdi.Text.Trim().ToLower();
+                    _selectedPatient.Cinsiyet = cmbCinsiyet.SelectedIndex == 0 ? "Erkek" : "Kadın";
+                    _selectedPatient.Yas = (int)spnYas.Value;
+                    _selectedPatient.Boy = (double)spnBoy.Value;
+                    _selectedPatient.GuncelKilo = (double)spnKilo.Value;
+                    _selectedPatient.LifestyleType = (LifestyleType)cmbLifestyle.SelectedIndex;
+                    _selectedPatient.ActivityLevel = (ActivityLevel)cmbActivity.SelectedIndex;
+                    _selectedPatient.MedicalHistory = txtKronikHastalik.Text?.Trim();
+                    _selectedPatient.Medications = txtIlaclar.Text?.Trim();
+                    _selectedPatient.AllergiesText = txtAlerjiler.Text?.Trim();
+                    if (!string.IsNullOrWhiteSpace(txtSifre.Text))
+                        _selectedPatient.ParolaHash = PasswordHasher.HashPassword(txtSifre.Text);
+                    _patientService.UpdatePatient(_selectedPatient);
+                    XtraMessageBox.Show("Hasta güncellendi!", "Başarılı");
+                }
+                LoadPatients();
+                ClearForm();
+            }
+            catch (Exception ex)
+            {
+                XtraMessageBox.Show($"Hata: {ex.Message}", "Hata");
             }
         }
+
+        private void BtnSil_Click(object sender, EventArgs e)
+        {
+            if (_selectedPatient == null) { XtraMessageBox.Show("Önce hasta seçin!", "Uyarı"); return; }
+            if (XtraMessageBox.Show($"{_selectedPatient.AdSoyad} silinsin mi?", "Onay", MessageBoxButtons.YesNo) == DialogResult.Yes)
+            {
+                try
+                {
+                    _patientService.DeletePatient(_selectedPatient.Id);
+                    XtraMessageBox.Show("Silindi!", "Başarılı");
+                    LoadPatients();
+                    ClearForm();
+                }
+                catch (Exception ex) { XtraMessageBox.Show($"Hata: {ex.Message}", "Hata"); }
+            }
+        }
+
+        private void CalcMetrics()
+        {
+            try
+            {
+                double h = (double)spnBoy.Value / 100;
+                double w = (double)spnKilo.Value;
+                double bmi = w / (h * h);
+                string st; Color c;
+                if (bmi < 18.5) { st = "Zayıf"; c = Info; }
+                else if (bmi < 25) { st = "Normal"; c = Success; }
+                else if (bmi < 30) { st = "Kilolu"; c = Warning; }
+                else { st = "Obez"; c = Danger; }
+                UpdateCard(pnlBMI, $"{bmi:F1}", st, c);
+
+                int age = (int)spnYas.Value;
+                bool m = cmbCinsiyet.SelectedIndex == 0;
+                double bmr = m ? 88.362 + 13.397 * w + 4.799 * (double)spnBoy.Value - 5.677 * age
+                              : 447.593 + 9.247 * w + 3.098 * (double)spnBoy.Value - 4.330 * age;
+                double[] f = { 1.2, 1.375, 1.55, 1.725, 1.9 };
+                double tdee = bmr * f[Math.Min(cmbActivity.SelectedIndex, 4)];
+                UpdateCard(pnlKalori, $"{tdee:N0}", "kcal/gün", Accent);
+            }
+            catch { }
+        }
+
+        #region Helpers
+        private void AddLabel(Panel p, string t, int y)
+        {
+            // Zorunlu alanlar için kırmızı, diğerleri için canlı renkler
+            Color labelColor;
+            if (t.Contains("*"))
+            {
+                labelColor = Color.FromArgb(220, 53, 69); // Kırmızı - zorunlu alan
+            }
+            else if (t.Contains("Ad Soyad") || t.Contains("Kullanıcı") || t.Contains("Şifre"))
+            {
+                labelColor = Primary; // Yeşil - önemli alanlar
+            }
+            else if (t.Contains("Boy") || t.Contains("Kilo") || t.Contains("Yaş"))
+            {
+                labelColor = Info; // Mavi - fiziksel özellikler
+            }
+            else if (t.Contains("Yaşam") || t.Contains("Aktivite"))
+            {
+                labelColor = Secondary; // Mor - yaşam tarzı
+            }
+            else if (t.Contains("Kronik") || t.Contains("İlaç") || t.Contains("Alerji"))
+            {
+                labelColor = Warning; // Turuncu - sağlık bilgileri
+            }
+            else
+            {
+                labelColor = Color.FromArgb(99, 102, 241); // Mor - varsayılan
+            }
+            
+            var lbl = new Label 
+            { 
+                Text = t, 
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold), 
+                ForeColor = labelColor, 
+                Location = new Point(0, y), 
+                AutoSize = true, 
+                BackColor = Color.Transparent 
+            };
+            p.Controls.Add(lbl);
+        }
+        private TextEdit AddTextBox(Panel p, string ph, int y, bool pwd = false)
+        {
+            var t = new TextEdit { Location = new Point(0, y), Size = new Size(335, 32) };
+            t.Properties.NullValuePrompt = ph;
+            if (pwd) t.Properties.UseSystemPasswordChar = true;
+            p.Controls.Add(t);
+            return t;
+        }
+        private ComboBoxEdit AddCombo(Panel p, string[] items, int sel, int y, int w)
+        {
+            var c = new ComboBoxEdit { Location = new Point(0, y), Size = new Size(w, 32) };
+            c.Properties.Items.AddRange(items);
+            c.Properties.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor;
+            c.SelectedIndex = sel;
+            p.Controls.Add(c);
+            return c;
+        }
+        private SpinEdit AddSpin(Panel p, decimal min, decimal max, decimal val, int x, int y, int w)
+        {
+            var s = new SpinEdit { Location = new Point(x, y), Size = new Size(w, 32) };
+            s.Properties.MinValue = min; s.Properties.MaxValue = max; s.Value = val;
+            p.Controls.Add(s);
+            return s;
+        }
+        private Panel CreateCard(string title, string val, string st, Color c, int x, int y)
+        {
+            var p = new Panel { Location = new Point(x, y), Size = new Size(160, 90) };
+            p.Paint += (s, e) =>
+            {
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                using (var brush = new SolidBrush(Color.FromArgb(25, c)))
+                using (var path = RRect(new Rectangle(0, 0, p.Width - 1, p.Height - 1), 10))
+                    e.Graphics.FillPath(brush, path);
+            };
+            p.Controls.Add(new Label { Text = title, Font = new Font("Segoe UI", 9, FontStyle.Bold), ForeColor = c, Location = new Point(12, 8), AutoSize = true, BackColor = Color.Transparent });
+            p.Controls.Add(new Label { Text = val, Font = new Font("Segoe UI", 20, FontStyle.Bold), ForeColor = c, Location = new Point(12, 28), AutoSize = true, BackColor = Color.Transparent, Tag = "v" });
+            p.Controls.Add(new Label { Text = st, Font = new Font("Segoe UI", 9), ForeColor = c, Location = new Point(12, 60), AutoSize = true, BackColor = Color.Transparent, Tag = "s" });
+            return p;
+        }
+        private void UpdateCard(Panel p, string v, string s, Color c)
+        {
+            foreach (Control ctrl in p.Controls) { ctrl.ForeColor = c; if (ctrl.Tag?.ToString() == "v") ctrl.Text = v; if (ctrl.Tag?.ToString() == "s") ctrl.Text = s; }
+            p.Invalidate();
+        }
+        private SimpleButton CreateBtn(string t, Color c, int x, int y, int w) => new SimpleButton { Text = t, Location = new Point(x, y), Size = new Size(w, 38), Font = new Font("Segoe UI", 10, FontStyle.Bold), Appearance = { BackColor = c, ForeColor = Color.White } };
+        private void PaintCard(Graphics g, Panel p)
+        {
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            using (var path = RRect(new Rectangle(0, 0, p.Width - 1, p.Height - 1), 12))
+            {
+                g.FillPath(new SolidBrush(CardBg), path);
+                g.DrawPath(new Pen(Border), path);
+            }
+        }
+        private GraphicsPath RRect(Rectangle r, int rad)
+        {
+            var p = new GraphicsPath();
+            p.AddArc(r.X, r.Y, rad, rad, 180, 90);
+            p.AddArc(r.Right - rad, r.Y, rad, rad, 270, 90);
+            p.AddArc(r.Right - rad, r.Bottom - rad, rad, rad, 0, 90);
+            p.AddArc(r.X, r.Bottom - rad, rad, rad, 90, 90);
+            p.CloseFigure();
+            return p;
+        }
+        private string GetInit(string n) => string.IsNullOrEmpty(n) ? "?" : n.Split(' ').Length >= 2 ? $"{n.Split(' ')[0][0]}{n.Split(' ')[1][0]}".ToUpper() : n.Substring(0, Math.Min(2, n.Length)).ToUpper();
+        private Color GetColor(int id) => new[] { Primary, Secondary, Accent, Success, Pink, Purple, Cyan, Info }[Math.Abs(id) % 8];
         #endregion
     }
 }

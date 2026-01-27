@@ -115,69 +115,65 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
             {
                 Dock = DockStyle.Fill,
                 BackColor = CardWhite,
-                Padding = new Padding(15, 10, 15, 10)
+                Padding = new Padding(10)
             };
             panel.Paint += (s, e) => DrawRoundedBorder(e.Graphics, panel, 12);
 
             // Title
             var lblTitle = new Label
             {
-                Text = "+ Yeni Randevu Oluştur",
-                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                Text = "+ Yeni Randevu",
+                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
                 ForeColor = TextDark,
-                Location = new Point(15, 18),
+                Location = new Point(15, 25),
                 AutoSize = true
             };
             panel.Controls.Add(lblTitle);
 
-            int x = 200;
-            int y = 12;
+            int x = 140;
+            int y = 20;
 
             // Hasta
-            AddFormLabel(panel, "Hasta Seçin:", x, y);
-            cmbHasta = new ComboBoxEdit { Location = new Point(x, y + 16), Size = new Size(130, 26) };
-            LoadPatients();
+            AddFormLabel(panel, "Hasta:", x, y - 2);
+            cmbHasta = new ComboBoxEdit { Location = new Point(x + 45, y - 2), Size = new Size(110, 24) };
+            cmbHasta.Properties.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor;
             panel.Controls.Add(cmbHasta);
-            x += 140;
 
             // Tarih
-            AddFormLabel(panel, "Tarih:", x, y);
-            dtTarih = new DateEdit { Location = new Point(x, y + 16), Size = new Size(100, 26) };
+            AddFormLabel(panel, "Tarih:", x + 165, y - 2);
+            dtTarih = new DateEdit { Location = new Point(x + 205, y - 2), Size = new Size(95, 24) };
             dtTarih.EditValue = DateTime.Today;
             panel.Controls.Add(dtTarih);
-            x += 110;
 
             // Saat
-            AddFormLabel(panel, "Saat:", x, y);
-            timeSaat = new TimeEdit { Location = new Point(x, y + 16), Size = new Size(75, 26) };
+            AddFormLabel(panel, "Saat:", x + 310, y - 2);
+            timeSaat = new TimeEdit { Location = new Point(x + 345, y - 2), Size = new Size(65, 24) };
             timeSaat.EditValue = new DateTime(2000, 1, 1, 10, 30, 0);
             panel.Controls.Add(timeSaat);
-            x += 85;
 
             // Tür
-            AddFormLabel(panel, "Tür:", x, y);
-            cmbTur = new ComboBoxEdit { Location = new Point(x, y + 16), Size = new Size(85, 26) };
+            AddFormLabel(panel, "Tür:", x + 420, y - 2);
+            cmbTur = new ComboBoxEdit { Location = new Point(x + 450, y - 2), Size = new Size(75, 24) };
+            cmbTur.Properties.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor;
             cmbTur.Properties.Items.AddRange(new[] { "Online", "Klinik" });
             cmbTur.SelectedIndex = 0;
             panel.Controls.Add(cmbTur);
-            x += 95;
 
             // Ücret
-            AddFormLabel(panel, "Ücret:", x, y);
-            spnUcret = new SpinEdit { Location = new Point(x, y + 16), Size = new Size(80, 26) };
+            AddFormLabel(panel, "Ücret:", x + 535, y - 2);
+            spnUcret = new SpinEdit { Location = new Point(x + 575, y - 2), Size = new Size(70, 24) };
             spnUcret.Properties.MinValue = 0;
             spnUcret.Properties.MaxValue = 10000;
             spnUcret.EditValue = 500;
             panel.Controls.Add(spnUcret);
-            x += 90;
 
             // Ekle Button
             var btnEkle = new SimpleButton
             {
                 Text = "+ Ekle",
-                Location = new Point(x + 5, y + 14),
-                Size = new Size(75, 30),
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                Location = new Point(x + 655, y - 4),
+                Size = new Size(70, 28),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                 Appearance = { BackColor = PrimaryGreen, ForeColor = Color.White, BorderColor = PrimaryGreen }
             };
             btnEkle.Click += BtnAdd_Click;
@@ -359,53 +355,103 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
 
             int x = 0;
 
-            // Hasta filter
-            cmbFilterHasta = new ComboBoxEdit { Location = new Point(x, 8), Size = new Size(120, 28) };
-            cmbFilterHasta.Properties.NullText = "Hasta";
-            cmbFilterHasta.Properties.Items.Add("...");
+            // Hasta filter - seçince otomatik filtrele
+            cmbFilterHasta = new ComboBoxEdit { Location = new Point(x, 8), Size = new Size(140, 28) };
+            cmbFilterHasta.Properties.NullText = "Tüm Hastalar";
+            cmbFilterHasta.Properties.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor;
+            cmbFilterHasta.SelectedIndexChanged += (s, e) => FilterAppointments();
             panel.Controls.Add(cmbFilterHasta);
-            x += 130;
-
-            // Tarih Aralığı
-            var cmbTarih = new ComboBoxEdit { Location = new Point(x, 8), Size = new Size(120, 28) };
-            cmbTarih.Properties.NullText = "Tarih Aralığı";
-            cmbTarih.Properties.Items.AddRange(new[] { "Bugün", "Bu Hafta", "Bu Ay", "Tümü" });
-            panel.Controls.Add(cmbTarih);
-            x += 130;
+            x += 150;
 
             // Tür
-            cmbFilterTur = new ComboBoxEdit { Location = new Point(x, 8), Size = new Size(80, 28) };
+            cmbFilterTur = new ComboBoxEdit { Location = new Point(x, 8), Size = new Size(90, 28) };
             cmbFilterTur.Properties.NullText = "Tür";
+            cmbFilterTur.Properties.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor;
             cmbFilterTur.Properties.Items.AddRange(new[] { "Tümü", "Online", "Klinik" });
+            cmbFilterTur.SelectedIndex = 0;
+            cmbFilterTur.SelectedIndexChanged += (s, e) => FilterAppointments();
             panel.Controls.Add(cmbFilterTur);
-            x += 90;
-
-            // Ücret
-            var txtUcret = new TextEdit { Location = new Point(x, 8), Size = new Size(80, 28) };
-            txtUcret.Properties.NullText = "Ücret";
-            panel.Controls.Add(txtUcret);
-            x += 90;
+            x += 100;
 
             // Durum
-            cmbFilterDurum = new ComboBoxEdit { Location = new Point(x, 8), Size = new Size(100, 28) };
+            cmbFilterDurum = new ComboBoxEdit { Location = new Point(x, 8), Size = new Size(110, 28) };
             cmbFilterDurum.Properties.NullText = "Durum";
+            cmbFilterDurum.Properties.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor;
             cmbFilterDurum.Properties.Items.AddRange(new[] { "Tümü", "Bekliyor", "Onaylı", "Tamamlandı", "İptal" });
+            cmbFilterDurum.SelectedIndex = 0;
+            cmbFilterDurum.SelectedIndexChanged += (s, e) => FilterAppointments();
             panel.Controls.Add(cmbFilterDurum);
-            x += 110;
+            x += 120;
 
-            // Ara button
-            var btnAra = new SimpleButton
+            // Tümünü Göster butonu
+            var btnYenile = new SimpleButton
             {
-                Text = "🔍 Ara",
+                Text = "↻ Tümünü Göster",
                 Location = new Point(x, 6),
-                Size = new Size(70, 32),
-                Font = new Font("Segoe UI", 9F),
-                Appearance = { BackColor = CardWhite, ForeColor = TextDark, BorderColor = InputBorder }
+                Size = new Size(115, 32),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Appearance = { BackColor = PrimaryGreen, ForeColor = Color.White, BorderColor = PrimaryGreen }
             };
-            btnAra.Click += (s, e) => LoadData();
-            panel.Controls.Add(btnAra);
+            btnYenile.Click += (s, e) => ResetFilters();
+            panel.Controls.Add(btnYenile);
 
             return panel;
+        }
+        
+        private void FilterAppointments()
+        {
+            try
+            {
+                var filtered = _appointments.ToList();
+                
+                // Hasta filtresi
+                var selectedPatient = cmbFilterHasta?.EditValue as PatientItem;
+                if (selectedPatient != null && selectedPatient.Id > 0)
+                {
+                    filtered = filtered.Where(a => a.PatientId == selectedPatient.Id).ToList();
+                }
+                
+                // Tür filtresi
+                var tur = cmbFilterTur?.Text;
+                if (!string.IsNullOrEmpty(tur) && tur != "Tümü")
+                {
+                    if (tur == "Online")
+                        filtered = filtered.Where(a => a.Type == AppointmentType.Online).ToList();
+                    else if (tur == "Klinik")
+                        filtered = filtered.Where(a => a.Type == AppointmentType.Clinic).ToList();
+                }
+                
+                // Durum filtresi
+                var durum = cmbFilterDurum?.Text;
+                if (!string.IsNullOrEmpty(durum) && durum != "Tümü")
+                {
+                    if (durum == "Bekliyor")
+                        filtered = filtered.Where(a => a.Status == AppointmentStatus.Pending).ToList();
+                    else if (durum == "Onaylı")
+                        filtered = filtered.Where(a => a.Status == AppointmentStatus.Scheduled).ToList();
+                    else if (durum == "Tamamlandı")
+                        filtered = filtered.Where(a => a.Status == AppointmentStatus.Completed).ToList();
+                    else if (durum == "İptal")
+                        filtered = filtered.Where(a => a.Status == AppointmentStatus.Cancelled).ToList();
+                }
+                
+                gridAppointments.DataSource = filtered;
+                gridAppointments.RefreshDataSource();
+            }
+            catch { }
+        }
+        
+        private void ResetFilters()
+        {
+            if (cmbFilterHasta != null && cmbFilterHasta.Properties.Items.Count > 0)
+                cmbFilterHasta.SelectedIndex = 0;
+            if (cmbFilterTur != null)
+                cmbFilterTur.SelectedIndex = 0;
+            if (cmbFilterDurum != null)
+                cmbFilterDurum.SelectedIndex = 0;
+            
+            gridAppointments.DataSource = _appointments;
+            gridAppointments.RefreshDataSource();
         }
         #endregion
 
@@ -443,7 +489,7 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
 
             // Sıfırla
             var btnSifirla = CreateActionBtn("⊘ Sıfırla", x, CardWhite, TextDark, true);
-            btnSifirla.Click += (s, e) => ClearFilters();
+            btnSifirla.Click += (s, e) => ResetFilters();
             panel.Controls.Add(btnSifirla);
             x += 95;
 
@@ -607,15 +653,35 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
             try
             {
                 var patients = _patientService.GetPatientsByDoctor(AuthContext.UserId);
-                cmbHasta.Properties.Items.Clear();
-                foreach (var p in patients)
+                
+                // Form combobox
+                if (cmbHasta != null)
                 {
-                    cmbHasta.Properties.Items.Add(new PatientItem { Id = p.Id, Name = p.AdSoyad });
+                    cmbHasta.Properties.Items.Clear();
+                    foreach (var p in patients)
+                    {
+                        cmbHasta.Properties.Items.Add(new PatientItem { Id = p.Id, Name = p.AdSoyad });
+                    }
+                    if (cmbHasta.Properties.Items.Count > 0)
+                        cmbHasta.SelectedIndex = 0;
                 }
-                if (cmbHasta.Properties.Items.Count > 0)
-                    cmbHasta.SelectedIndex = 0;
+                
+                // Filtre combobox
+                if (cmbFilterHasta != null)
+                {
+                    cmbFilterHasta.Properties.Items.Clear();
+                    cmbFilterHasta.Properties.Items.Add(new PatientItem { Id = 0, Name = "Tüm Hastalar" });
+                    foreach (var p in patients)
+                    {
+                        cmbFilterHasta.Properties.Items.Add(new PatientItem { Id = p.Id, Name = p.AdSoyad });
+                    }
+                    cmbFilterHasta.SelectedIndex = 0;
+                }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("LoadPatients Error: " + ex.Message);
+            }
         }
         #endregion
 
@@ -624,8 +690,12 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
         {
             try
             {
+                // Hastaları yükle
+                LoadPatients();
+                
                 _appointments = _repository.GetByDoctor(AuthContext.UserId).ToList();
                 gridAppointments.DataSource = _appointments;
+                gridAppointments.RefreshDataSource();
 
                 // Update summary cards
                 int pending = _appointments.Count(a => a.Status == AppointmentStatus.Pending);
@@ -688,7 +758,7 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
             var apt = GetSelectedAppointment();
             if (apt == null) return;
 
-            apt.Status = AppointmentStatus.Approved;
+            apt.Status = AppointmentStatus.Scheduled;
             _repository.Update(apt);
             ToastNotification.ShowSuccess("Randevu onaylandı!");
             LoadData();
@@ -752,13 +822,6 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
             txtNot.Text = "";
         }
 
-        private void ClearFilters()
-        {
-            cmbFilterHasta.EditValue = null;
-            cmbFilterTur.EditValue = null;
-            cmbFilterDurum.EditValue = null;
-            LoadData();
-        }
         #endregion
 
         private class PatientItem

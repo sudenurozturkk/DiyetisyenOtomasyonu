@@ -462,6 +462,11 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
             }
         }
 
+        private void FrmAnalytics_Load(object sender, EventArgs e)
+        {
+
+        }
+
         private void LoadWeightChart(int patientId)
         {
             chartWeight.Series.Clear();
@@ -539,9 +544,14 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
         private void InitializeComponent()
         {
             this.SuspendLayout();
+            // 
+            // FrmAnalytics
+            // 
             this.ClientSize = new System.Drawing.Size(1200, 700);
             this.Name = "FrmAnalytics";
+            this.Load += new System.EventHandler(this.FrmAnalytics_Load);
             this.ResumeLayout(false);
+
         }
     }
 }

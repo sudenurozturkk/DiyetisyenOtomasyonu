@@ -150,32 +150,38 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
 
             var btnSearch = new SimpleButton
             {
-                Text = "ARA",
+                Text = "🔍 ARA",
                 Location = new Point(380, 13),
-                Size = new Size(80, 34),
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                Appearance = { BackColor = PrimaryColor, ForeColor = Color.White }
+                Size = new Size(90, 34),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
             };
+            btnSearch.Appearance.BackColor = SuccessGreen;
+            btnSearch.Appearance.ForeColor = Color.White;
+            btnSearch.Appearance.Options.UseBackColor = true;
+            btnSearch.Appearance.Options.UseForeColor = true;
             btnSearch.Click += (s, e) => SearchMeals();
             toolbar.Controls.Add(btnSearch);
 
             var btnRefresh = new SimpleButton
             {
-                Text = "YENİLE",
-                Location = new Point(470, 13),
-                Size = new Size(80, 34),
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                Appearance = { BackColor = TextSecondary, ForeColor = Color.White }
+                Text = "🔄 YENİLE",
+                Location = new Point(480, 13),
+                Size = new Size(90, 34),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
             };
+            btnRefresh.Appearance.BackColor = Color.FromArgb(52, 152, 219);
+            btnRefresh.Appearance.ForeColor = Color.White;
+            btnRefresh.Appearance.Options.UseBackColor = true;
+            btnRefresh.Appearance.Options.UseForeColor = true;
             btnRefresh.Click += (s, e) => LoadMeals();
             toolbar.Controls.Add(btnRefresh);
 
             lblTotalCount = new LabelControl
             {
                 Text = "Toplam: 0 yemek",
-                Location = new Point(570, 20),
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                ForeColor = TextSecondary
+                Location = new Point(585, 20),
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                ForeColor = PrimaryColor
             };
             toolbar.Controls.Add(lblTotalCount);
 
@@ -199,26 +205,151 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
                 RowHeight = 36
             };
             viewMeals.Appearance.Row.Font = new Font("Segoe UI", 10F);
-            viewMeals.Appearance.EvenRow.BackColor = Color.FromArgb(240, 253, 250); // Light Teal tint
+            viewMeals.Appearance.Row.ForeColor = TextPrimary; // Varsayılan siyah yazı
+            viewMeals.Appearance.EvenRow.BackColor = Color.FromArgb(248, 250, 252); // Çok açık gri
+            viewMeals.Appearance.OddRow.BackColor = Color.White;
             viewMeals.Appearance.HeaderPanel.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            viewMeals.Appearance.HeaderPanel.ForeColor = PrimaryColor;
+            viewMeals.Appearance.HeaderPanel.ForeColor = Color.FromArgb(64, 64, 64); // Koyu gri (Okunabilir)
+            viewMeals.Appearance.HeaderPanel.BackColor = Color.FromArgb(240, 240, 240); // Açık gri arka plan
+            viewMeals.Appearance.HeaderPanel.Options.UseBackColor = true;
+            viewMeals.Appearance.HeaderPanel.Options.UseForeColor = true;
             viewMeals.Appearance.HeaderPanel.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
             viewMeals.Appearance.Row.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
+            viewMeals.Appearance.FocusedRow.BackColor = Color.FromArgb(230, 245, 255); // Açık mavi
+            viewMeals.Appearance.FocusedRow.ForeColor = TextPrimary;
+            viewMeals.Appearance.SelectedRow.BackColor = Color.FromArgb(220, 237, 255); // Biraz daha koyu mavi
+            viewMeals.Appearance.SelectedRow.ForeColor = TextPrimary;
+            viewMeals.OptionsView.EnableAppearanceOddRow = true;
+            
+            // Satır renklerini kategoriye göre ayarla
+            viewMeals.RowCellStyle += (s, e) =>
+            {
+                // Varsayılan - okunabilir siyah yazı (tüm kolonlar için)
+                e.Appearance.ForeColor = Color.FromArgb(33, 37, 41); // Koyu gri/siyah
+                e.Appearance.BackColor = Color.Transparent;
+                e.Appearance.Font = new Font("Segoe UI", 10F);
+                
+                // Yemek adı kolonu - siyah, kalın
+                if (e.Column.FieldName == "Name")
+                {
+                    e.Appearance.ForeColor = TextPrimary;
+                    e.Appearance.FontStyleDelta = FontStyle.Bold;
+                }
+                // Gram kolonu - normal siyah
+                else if (e.Column.FieldName == "PortionGrams")
+                {
+                    e.Appearance.ForeColor = TextPrimary;
+                }
+                
+                if (e.Column.FieldName == "MealTimeName")
+                {
+                    var value = viewMeals.GetRowCellValue(e.RowHandle, "MealTimeName")?.ToString() ?? "";
+                    if (value.Contains("Kahvalt")) 
+                    { 
+                        e.Appearance.ForeColor = Color.FromArgb(230, 126, 34); // Turuncu
+                        e.Appearance.FontStyleDelta = FontStyle.Bold; 
+                    }
+                    else if (value.Contains("Öğle") || value.Contains("Ogle")) 
+                    { 
+                        e.Appearance.ForeColor = Color.FromArgb(39, 174, 96); // Yeşil
+                        e.Appearance.FontStyleDelta = FontStyle.Bold; 
+                    }
+                    else if (value.Contains("Akşam") || value.Contains("Aksam")) 
+                    { 
+                        e.Appearance.ForeColor = Color.FromArgb(142, 68, 173); // Mor
+                        e.Appearance.FontStyleDelta = FontStyle.Bold; 
+                    }
+                    else if (value.Contains("Ara")) 
+                    { 
+                        e.Appearance.ForeColor = Color.FromArgb(52, 152, 219); // Mavi
+                        e.Appearance.FontStyleDelta = FontStyle.Bold; 
+                    }
+                }
+                else if (e.Column.FieldName == "Category")
+                {
+                    var value = viewMeals.GetRowCellValue(e.RowHandle, "Category")?.ToString() ?? "";
+                    if (value.Contains("Ana")) 
+                    {
+                        e.Appearance.ForeColor = SuccessGreen; // Koyu yeşil
+                        e.Appearance.FontStyleDelta = FontStyle.Bold;
+                    }
+                    else if (value.Contains("Salat")) 
+                    {
+                        e.Appearance.ForeColor = Color.FromArgb(46, 204, 113); // Açık yeşil
+                        e.Appearance.FontStyleDelta = FontStyle.Bold;
+                    }
+                    else if (value.Contains("Çorba") || value.Contains("Corba")) 
+                    {
+                        e.Appearance.ForeColor = Color.FromArgb(230, 126, 34); // Turuncu
+                        e.Appearance.FontStyleDelta = FontStyle.Bold;
+                    }
+                    else if (value.Contains("Sebze")) 
+                    {
+                        e.Appearance.ForeColor = Color.FromArgb(39, 174, 96); // Yeşil
+                        e.Appearance.FontStyleDelta = FontStyle.Bold;
+                    }
+                    else if (value.Contains("Kahvalt")) 
+                    {
+                        e.Appearance.ForeColor = Color.FromArgb(230, 126, 34); // Turuncu
+                        e.Appearance.FontStyleDelta = FontStyle.Bold;
+                    }
+                }
+                else if (e.Column.FieldName == "Calories")
+                {
+                    e.Appearance.ForeColor = Color.FromArgb(220, 53, 69); // Kırmızı
+                    e.Appearance.FontStyleDelta = FontStyle.Bold;
+                }
+                else if (e.Column.FieldName == "Protein")
+                {
+                    e.Appearance.ForeColor = Color.FromArgb(52, 152, 219); // Mavi
+                    e.Appearance.FontStyleDelta = FontStyle.Bold;
+                }
+                else if (e.Column.FieldName == "Carbs")
+                {
+                    e.Appearance.ForeColor = Color.FromArgb(241, 196, 15); // Sarı/Altın
+                    e.Appearance.FontStyleDelta = FontStyle.Bold;
+                }
+                else if (e.Column.FieldName == "Fat")
+                {
+                    e.Appearance.ForeColor = Color.FromArgb(155, 89, 182); // Mor
+                    e.Appearance.FontStyleDelta = FontStyle.Bold;
+                }
+            };
 
             // Kolonları düzenle - Makroları ayır
             var colName = viewMeals.Columns.AddVisible("Name", "YEMEK ADI");
             colName.AppearanceCell.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Near;
             colName.Width = 180;
 
-            viewMeals.Columns.AddVisible("MealTimeName", "ÖĞÜN").Width = 90;
-            viewMeals.Columns.AddVisible("Category", "KATEGORİ").Width = 90;
-            viewMeals.Columns.AddVisible("Calories", "KALORİ").Width = 70;
-            viewMeals.Columns.AddVisible("PortionGrams", "GRAM").Width = 60;
+            var colMealTime = viewMeals.Columns.AddVisible("MealTimeName", "ÖĞÜN");
+            colMealTime.Width = 90;
             
-            // Makrolar ayrı kolonlarda
-            viewMeals.Columns.AddVisible("Protein", "PRO (g)").Width = 60;
-            viewMeals.Columns.AddVisible("Carbs", "KARB (g)").Width = 60;
-            viewMeals.Columns.AddVisible("Fat", "YAĞ (g)").Width = 60;
+            var colCategory = viewMeals.Columns.AddVisible("Category", "KATEGORİ");
+            colCategory.Width = 90;
+            
+            var colCalories = viewMeals.Columns.AddVisible("Calories", "KALORİ");
+            colCalories.Width = 70;
+            colCalories.AppearanceHeader.ForeColor = Color.FromArgb(220, 53, 69); // Kırmızı başlık
+            colCalories.AppearanceHeader.FontStyleDelta = FontStyle.Bold;
+            
+            var colGrams = viewMeals.Columns.AddVisible("PortionGrams", "GRAM");
+            colGrams.Width = 60;
+            
+            // Makrolar ayrı kolonlarda - Renkli başlıklar
+            var colProtein = viewMeals.Columns.AddVisible("Protein", "PRO (g)");
+            colProtein.Width = 60;
+            colProtein.AppearanceHeader.ForeColor = Color.FromArgb(52, 152, 219); // Mavi başlık
+            colProtein.AppearanceHeader.FontStyleDelta = FontStyle.Bold;
+            
+            var colCarbs = viewMeals.Columns.AddVisible("Carbs", "KARB (g)");
+            colCarbs.Width = 60;
+            colCarbs.AppearanceHeader.ForeColor = Color.FromArgb(241, 196, 15); // Sarı başlık
+            colCarbs.AppearanceHeader.FontStyleDelta = FontStyle.Bold;
+            
+            var colFat = viewMeals.Columns.AddVisible("Fat", "YAĞ (g)");
+            colFat.Width = 60;
+            colFat.AppearanceHeader.ForeColor = Color.FromArgb(155, 89, 182); // Mor başlık
+            colFat.AppearanceHeader.FontStyleDelta = FontStyle.Bold;
 
             gridMeals.MainView = viewMeals;
             viewMeals.FocusedRowChanged += ViewMeals_FocusedRowChanged;
@@ -336,34 +467,43 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
             // Butonlar
             var btnSave = new SimpleButton
             {
-                Text = "KAYDET",
+                Text = "💾 KAYDET",
                 Location = new Point(x, y),
                 Size = new Size(140, 45),
-                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
-                Appearance = { BackColor = SuccessGreen, ForeColor = Color.White }
+                Font = new Font("Segoe UI", 11F, FontStyle.Bold)
             };
+            btnSave.Appearance.BackColor = SuccessGreen;
+            btnSave.Appearance.ForeColor = Color.White;
+            btnSave.Appearance.Options.UseBackColor = true;
+            btnSave.Appearance.Options.UseForeColor = true;
             btnSave.Click += BtnSave_Click;
             formContainer.Controls.Add(btnSave);
 
             var btnClear = new SimpleButton
             {
-                Text = "TEMİZLE",
+                Text = "🔃 TEMİZLE",
                 Location = new Point(x + 150, y),
-                Size = new Size(100, 45),
-                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
-                Appearance = { BackColor = TextSecondary, ForeColor = Color.White }
+                Size = new Size(110, 45),
+                Font = new Font("Segoe UI", 11F, FontStyle.Bold)
             };
+            btnClear.Appearance.BackColor = WarningOrange;
+            btnClear.Appearance.ForeColor = Color.White;
+            btnClear.Appearance.Options.UseBackColor = true;
+            btnClear.Appearance.Options.UseForeColor = true;
             btnClear.Click += (s, e) => ClearForm();
             formContainer.Controls.Add(btnClear);
 
             var btnDelete = new SimpleButton
             {
-                Text = "SİL",
-                Location = new Point(x + 260, y),
-                Size = new Size(60, 45),
-                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
-                Appearance = { BackColor = DangerRed, ForeColor = Color.White }
+                Text = "🗑️ SİL",
+                Location = new Point(x + 270, y),
+                Size = new Size(70, 45),
+                Font = new Font("Segoe UI", 11F, FontStyle.Bold)
             };
+            btnDelete.Appearance.BackColor = DangerRed;
+            btnDelete.Appearance.ForeColor = Color.White;
+            btnDelete.Appearance.Options.UseBackColor = true;
+            btnDelete.Appearance.Options.UseForeColor = true;
             btnDelete.Click += BtnDelete_Click;
             formContainer.Controls.Add(btnDelete);
 

@@ -159,7 +159,10 @@
     <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
     </Reference>
-    <Reference Include="System" /><Reference Include="System.Configuration" /><Reference Include="System.Core" /><Reference Include="System.Xml.Linq" />
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
@@ -172,7 +175,6 @@
     <Reference Include="MySql.Data, Version=8.4.0.0, Culture=neutral, PublicKeyToken=c5687fc88969c44d, processorArchitecture=MSIL">
       <HintPath>packages\MySql.Data.8.4.0\lib\net48\MySql.Data.dll</HintPath>
     </Reference>
-
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Bootstrap\ThemeBootstrapper.cs" />
@@ -218,16 +220,16 @@
     <Compile Include="Forms\Doctor\FrmGoalsNotes.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Forms\Doctor\FrmHedefler.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Forms\Doctor\FrmNotlar.cs">
-      <SubType>Form</SubType>
-    </Compile>
     <Compile Include="Forms\Doctor\FrmMeals.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Forms\Doctor\FrmMessagesDoctor.cs">
+    <Compile Include="Forms\Doctor\FrmMessagesModern.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Doctor\FrmNotesModern.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Doctor\FrmReports.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\Doctor\FrmPatients.cs">
@@ -272,9 +274,11 @@
     <Compile Include="Forms\Patient\FrmExerciseTasks.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Forms\Patient\FrmPatientProfile.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Infrastructure\Database\DatabaseConfig.cs" />
     <Compile Include="Infrastructure\Database\DatabaseInitializer.cs" />
-
     <Compile Include="Infrastructure\Repositories\BaseRepository.cs" />
     <Compile Include="Infrastructure\Repositories\DietRepository.cs" />
     <Compile Include="Infrastructure\Repositories\DoctorRepository.cs" />
@@ -288,6 +292,7 @@
     <Compile Include="Infrastructure\Repositories\NoteRepository.cs" />
     <Compile Include="Infrastructure\Repositories\BodyMeasurementRepository.cs" />
     <Compile Include="Infrastructure\Repositories\ExerciseTaskRepository.cs" />
+    <Compile Include="Infrastructure\Repositories\ReportRepository.cs" />
     <Compile Include="Infrastructure\Repositories\AppointmentRepository.cs" />
     <Compile Include="Infrastructure\Repositories\AiChatRepository.cs" />
     <Compile Include="Domain\AiChatMessage.cs" />
@@ -295,13 +300,15 @@
     <Compile Include="Infrastructure\Services\NoteService.cs" />
     <Compile Include="Infrastructure\Security\AuthContext.cs" />
     <Compile Include="Infrastructure\Security\PasswordHasher.cs" />
-
     <Compile Include="Infrastructure\Services\AiAssistantService.cs" />
     <Compile Include="Infrastructure\Services\DietService.cs" />
     <Compile Include="Infrastructure\Services\GoalService.cs" />
     <Compile Include="Infrastructure\Services\MessageService.cs" />
     <Compile Include="Infrastructure\Services\PatientService.cs" />
     <Compile Include="Infrastructure\Services\MealService.cs" />
+    <Compile Include="Infrastructure\Services\AppointmentService.cs" />
+    <Compile Include="Infrastructure\Services\ExerciseService.cs" />
+    <Compile Include="Infrastructure\Services\ReportService.cs" />
     <Compile Include="Infrastructure\Services\PatientDataAggregator.cs" />
     <Compile Include="Infrastructure\Services\IAIService.cs" />
     <Compile Include="Infrastructure\Services\GeminiAIService.cs" />
@@ -316,6 +323,9 @@
     <Compile Include="Shared\ToastNotification.cs">
       <SubType>Form</SubType>
     </Compile>
+    <EmbeddedResource Include="Forms\Doctor\FrmAnalytics.resx">
+      <DependentUpon>FrmAnalytics.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Forms\Login\FrmLogin.resx">
       <DependentUpon>FrmLogin.cs</DependentUpon>
     </EmbeddedResource>

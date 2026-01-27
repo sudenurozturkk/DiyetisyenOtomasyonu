@@ -68,3 +68,21 @@ appsettings.local.json
 
 # Build artifacts
 *.pdb
+
+# Documentation (SRS excluded from GitHub)
+DOCS/SRS_SOFTWARE_REQUIREMENTS_SPECIFICATION.md
+
+# API Keys and sensitive data
+*api*key*.txt
+*apikey*.txt
+*.env
+.env.local
+appsettings.Development.json
+
+# Python scripts (temporary)
+*.py
+__pycache__/
+*.pyc
+
+# ER Diagram guide (temporary)
+ER_DIYAGRAM_KILAVUZU.md

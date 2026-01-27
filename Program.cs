@@ -25,13 +25,9 @@ namespace DiyetisyenOtomasyonu
         {
             try
             {
-                System.IO.File.WriteAllText("startup_log.txt", "Starting application...\n");
-                
                 // Windows Forms temel ayarları
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
-                
-                System.IO.File.AppendAllText("startup_log.txt", "Visual styles enabled\n");
 
                 // Global hata yakalama
                 Application.ThreadException += (s, e) =>
@@ -48,23 +44,16 @@ namespace DiyetisyenOtomasyonu
                 };
 
                 // DevExpress tema ayarları
-                System.IO.File.AppendAllText("startup_log.txt", "Applying theme...\n");
                 ThemeBootstrapper.Apply();
-                System.IO.File.AppendAllText("startup_log.txt", "Theme applied\n");
 
                 // Veritabanı başlatma (MySQL)
-                System.IO.File.AppendAllText("startup_log.txt", "Initializing database...\n");
                 InitializeDatabase();
-                System.IO.File.AppendAllText("startup_log.txt", "Database initialized\n");
 
                 // Ana uygulama döngüsü
-                System.IO.File.AppendAllText("startup_log.txt", "Running application loop...\n");
                 RunApplicationLoop();
-                System.IO.File.AppendAllText("startup_log.txt", "Application loop ended\n");
             }
             catch (Exception ex)
             {
-                System.IO.File.AppendAllText("startup_log.txt", "ERROR: " + ex.ToString() + "\n");
                 LogError("Startup Exception", ex);
                 ShowErrorMessage("Başlangıç Hatası", ex);
             }
@@ -156,13 +145,23 @@ namespace DiyetisyenOtomasyonu
         }
 
         /// <summary>
-        /// Hatayı loglar (gelecekte dosyaya yazılabilir)
+        /// Hataları loglar. Debug modunda konsola yazar, production'da dosyaya yazılabilir.
         /// </summary>
         private static void LogError(string context, Exception ex)
         {
-            // TODO: Dosyaya veya veritabanına loglama eklenebilir
-            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {context}: {ex?.Message}");
-            System.Diagnostics.Debug.WriteLine(ex?.StackTrace);
+            var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            var logMessage = $"[{timestamp}] {context}: {ex?.Message}";
+            
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine(logMessage);
+            if (ex?.StackTrace != null)
+            {
+                System.Diagnostics.Debug.WriteLine(ex.StackTrace);
+            }
+#else
+            // Production'da dosyaya loglama eklenebilir
+            // Örnek: File.AppendAllText("logs/error.log", logMessage + Environment.NewLine);
+#endif
         }
     }
 }

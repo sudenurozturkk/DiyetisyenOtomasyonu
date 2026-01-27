@@ -1,494 +1,279 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
+using DiyetisyenOtomasyonu.Domain;
 using DiyetisyenOtomasyonu.Infrastructure.Services;
 using DiyetisyenOtomasyonu.Infrastructure.Security;
-using MessageEntity = DiyetisyenOtomasyonu.Domain.Message;
+using DiyetisyenOtomasyonu.Infrastructure.Repositories;
+using DiyetisyenOtomasyonu.Shared;
 
 namespace DiyetisyenOtomasyonu.Forms.Patient
 {
     public partial class FrmMessagesPatient : XtraForm
     {
         private readonly MessageService _messageService;
-        private readonly PatientService _patientService;
-        private XtraScrollableControl scrollMessages;
-        private FlowLayoutPanel flowMessages;
-        private MemoEdit txtMessage;
-        private LabelControl lblDoctorName;
-        private int _doctorId;
+        private readonly PatientRepository _patientRepo;
+        private DiyetisyenOtomasyonu.Domain.Patient _currentPatient;
+        private System.Windows.Forms.Timer _refreshTimer;
 
-        // Modern Renkler - YEŞİL TEMA (Mockup'a göre)
-        private readonly Color PrimaryColor = Color.FromArgb(13, 148, 136);       // Teal/Yeşil
-        private readonly Color SecondaryColor = Color.FromArgb(20, 184, 166);     // Açık Teal
-        private readonly Color SuccessColor = Color.FromArgb(34, 197, 94);        // Yeşil
-        private readonly Color DangerColor = Color.FromArgb(239, 68, 68);
-        private readonly Color WarningColor = Color.FromArgb(245, 158, 11);
-        private readonly Color CardColor = Color.White;
-        private readonly Color BackgroundColor = Color.FromArgb(248, 250, 252);
-        private readonly Color TextPrimary = Color.FromArgb(15, 23, 42);
-        private readonly Color TextSecondary = Color.FromArgb(100, 116, 139);
-        
-        // Mesaj Balonu Renkleri - YEŞİL TEMA (Mockup'a göre)
-        private readonly Color PatientMessageColor = Color.FromArgb(34, 197, 94);  // Yeşil - Hasta (sağda - kendi mesajları)
-        private readonly Color DoctorMessageColor = Color.White;                    // Beyaz - Doktor (solda)
-        private readonly Color DoctorMessageBorderColor = Color.FromArgb(226, 232, 240);
+        // UI Controls
+        private Panel pnlChatMessages;
+        private TextEdit txtMessage;
+        private SimpleButton btnSend;
+        private Label lblDoctorName;
+
+        // Colors
+        private Color PrimaryColor { get { return UiStyles.PrimaryColor; } } // Teal
+        private Color BackgroundColor { get { return Color.FromArgb(245, 247, 250); } }
+        private Color BubbleMyColor { get { return PrimaryColor; } }
+        private Color BubbleOtherColor { get { return Color.White; } }
 
         public FrmMessagesPatient()
         {
-            InitializeComponent();
             _messageService = new MessageService();
-            _patientService = new PatientService();
-            InitializeUI();
-            GetDoctorId();
+            _patientRepo = new PatientRepository();
+            
+            InitializeComponent();
+            SetupUI();
+            LoadPatientData();
             LoadMessages();
-        }
-
-        private void InitializeUI()
-        {
-            this.Text = "Mesajlarım";
-            this.BackColor = BackgroundColor;
-            this.Padding = new Padding(15);
-
-            // Ana kart - Doktor sayfasıyla aynı stil
-            var mainCard = new GroupControl
-            {
-                Dock = DockStyle.Fill,
-                Text = "MESAJLASMA",
-                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
-                ForeColor = PrimaryColor,
-                Appearance = { BackColor = CardColor }
-            };
-
-            // Header - Doktor bilgisi
-            var pnlHeader = new PanelControl
-            {
-                Dock = DockStyle.Top,
-                Height = 55,
-                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder,
-                BackColor = Color.FromArgb(238, 242, 255)
-            };
-
-            lblDoctorName = new LabelControl
-            {
-                Text = "Doktor: Yukleniyor...",
-                Location = new Point(20, 15),
-                Font = new Font("Segoe UI", 13F, FontStyle.Bold),
-                ForeColor = PrimaryColor,
-                AutoSizeMode = LabelAutoSizeMode.None,
-                Size = new Size(600, 28)
-            };
-            pnlHeader.Controls.Add(lblDoctorName);
-
-            mainCard.Controls.Add(pnlHeader);
-
-            // Mesaj yazma alani (EN ALTTA)
-            var pnlInput = new PanelControl
-            {
-                Dock = DockStyle.Bottom,
-                Height = 130,
-                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder,
-                BackColor = Color.FromArgb(248, 249, 250),
-                Padding = new Padding(15)
-            };
-
-            var lblNewMsg = new LabelControl
-            {
-                Text = "Yeni Mesaj Yaz (Enter ile gönder):",
-                Location = new Point(10, 5),
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                ForeColor = TextSecondary
-            };
-            pnlInput.Controls.Add(lblNewMsg);
-
-            txtMessage = new MemoEdit
-            {
-                Location = new Point(10, 28),
-                Size = new Size(580, 50),
-                Properties = {
-                    NullText = "Mesajınızı yazın ve Enter'a basın...",
-                    Appearance = { Font = new Font("Segoe UI", 11F) },
-                    ScrollBars = ScrollBars.None
-                }
-            };
-            txtMessage.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            txtMessage.KeyDown += TxtMessage_KeyDown;
-            pnlInput.Controls.Add(txtMessage);
-
-            var btnSend = new SimpleButton
-            {
-                Text = "Gönder",
-                Location = new Point(10, 85),
-                Size = new Size(130, 38),
-                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
-                Appearance = { BackColor = SuccessColor, ForeColor = Color.White },
-                AllowFocus = false
-            };
-            btnSend.Click += BtnSend_Click;
-            pnlInput.Controls.Add(btnSend);
-
-            mainCard.Controls.Add(pnlInput);
-
-            // Mesaj Geçmişi - Scrollable (kırpılmayı önler) - Doktor sayfasıyla aynı
-            scrollMessages = new XtraScrollableControl
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(245, 247, 250),
-                Padding = new Padding(15, 0, 15, 0), // Header'ın altından başlaması için üst padding yok
-                AutoScroll = true
-            };
-            scrollMessages.AutoScrollMargin = new Size(0, 20);
-
-            flowMessages = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Top,
-                AutoSize = true,
-                AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                BackColor = Color.Transparent,
-                Padding = new Padding(0, 70, 0, 20), // Header'dan sonra 70px boşluk - ilk mesaj görünsün
-                Margin = new Padding(0),
-                Width = scrollMessages.ClientSize.Width - 30
-            };
-
-            // FlowLayoutPanel genişliğini scrollMessages ile senkronize et
-            scrollMessages.Resize += (s, e) =>
-            {
-                if (flowMessages != null && scrollMessages.ClientSize.Width > 0)
-                {
-                    flowMessages.Width = scrollMessages.ClientSize.Width - 30;
-                }
-            };
-
-            scrollMessages.Controls.Add(flowMessages);
-            mainCard.Controls.Add(scrollMessages);
-
-            this.Controls.Add(mainCard);
-        }
-
-        private void TxtMessage_KeyDown(object sender, KeyEventArgs e)
-        {
-            // Enter ile mesaj gönder (Shift+Enter yeni satır)
-            if (e.KeyCode == Keys.Enter && !e.Shift)
-            {
-                e.SuppressKeyPress = true;
-                BtnSend_Click(sender, e);
-            }
-        }
-
-        private void GetDoctorId()
-        {
-            var patient = _patientService.GetPatientById(AuthContext.UserId);
-            if (patient != null)
-            {
-                _doctorId = patient.DoctorId;
-                lblDoctorName.Text = "👨‍⚕️ Doktorunuz: Dr. " + (patient.DoctorName ?? "Diyetisyen");
-            }
-        }
-
-        private void LoadMessages()
-        {
-            flowMessages.SuspendLayout();
-            flowMessages.Controls.Clear();
-
-            var messages = _messageService.GetConversation(AuthContext.UserId, _doctorId);
-
-            if (messages.Count == 0)
-            {
-                flowMessages.Controls.Add(new Label
-                {
-                    Text = "Henüz mesaj yok.\nDoktorunuza aşağıdan mesaj gönderebilirsiniz.",
-                    Font = new Font("Segoe UI", 11F),
-                    ForeColor = TextSecondary,
-                    AutoSize = true,
-                    Margin = new Padding(10, 20, 10, 10)
-                });
-            }
-            else
-            {
-                var sortedMessages = messages.OrderBy(m => m.SentAt).ToList();
-
-                foreach (var msg in sortedMessages)
-                {
-                    bool isPatient = msg.FromUserId == AuthContext.UserId;
-                    var bubble = CreateMessageBubble(msg, isPatient);
-                    flowMessages.Controls.Add(bubble);
-
-                    if (msg.ToUserId == AuthContext.UserId && !msg.IsRead)
-                    {
-                        _messageService.MarkAsRead(msg.Id);
-                    }
-                }
-            }
-
-            flowMessages.ResumeLayout(true);
-            flowMessages.PerformLayout();
-
-            // FlowLayoutPanel genişliğini güncelle
-            flowMessages.Width = scrollMessages.ClientSize.Width - 30;
-            
-            // AutoSize ile yükseklik otomatik ayarlanacak
-            flowMessages.PerformLayout();
-
-            // Scroll pozisyonunu EN ALTA ayarla - en son mesajlar görünsün (WhatsApp gibi)
-            // Handle oluşturulduktan sonra çalıştır
-            if (this.IsHandleCreated)
-            {
-                this.BeginInvoke(new Action(() =>
-                {
-                    try
-                    {
-                        // Önce layout'u tamamla
-                        scrollMessages.PerformLayout();
-                        flowMessages.PerformLayout();
-                        
-                        // Scroll'u EN ALTA ayarla - en son mesaj görünsün
-                        if (flowMessages.Controls.Count > 0)
-                        {
-                            var lastControl = flowMessages.Controls[flowMessages.Controls.Count - 1];
-                            scrollMessages.ScrollControlIntoView(lastControl);
-                        }
-                        else if (scrollMessages.VerticalScroll.Visible)
-                        {
-                            scrollMessages.VerticalScroll.Value = scrollMessages.VerticalScroll.Maximum;
-                        }
-                        
-                        // Son layout ve yeniden çizim
-                        scrollMessages.PerformLayout();
-                        flowMessages.PerformLayout();
-                        flowMessages.Invalidate();
-                        scrollMessages.Invalidate();
-                        scrollMessages.Refresh();
-                    }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine("Scroll hatası: " + ex.Message);
-                    }
-                }));
-            }
-            else
-            {
-                // Handle henüz oluşturulmadıysa, Load event'inde çalıştır
-                this.Load += (s, e) =>
-                {
-                    try
-                    {
-                        scrollMessages.HorizontalScroll.Value = 0;
-                        if (scrollMessages.VerticalScroll.Visible)
-                        {
-                            scrollMessages.VerticalScroll.Value = scrollMessages.VerticalScroll.Minimum;
-                        }
-                        scrollMessages.AutoScrollPosition = new Point(0, 0);
-                        if (flowMessages.Controls.Count > 0)
-                        {
-                            scrollMessages.ScrollControlIntoView(flowMessages.Controls[0]);
-                        }
-                    }
-                    catch { }
-                };
-            }
-        }
-
-        /// <summary>
-        /// WhatsApp tarzi mesaj balonu olusturur
-        /// </summary>
-        private Panel CreateMessageBubble(MessageEntity msg, bool isPatient)
-        {
-            // Container genişliği - flowMessages genişliğini kullan
-            int containerWidth = flowMessages != null ? flowMessages.Width - 25 : 500;
-            if (containerWidth < 200) containerWidth = 200;
-
-            // Ana container - tum genisligi kaplar
-            var container = new Panel
-            {
-                Width = containerWidth,
-                Height = 0, // AutoSize için başlangıçta 0
-                AutoSize = false,
-                BackColor = Color.Transparent,
-                Margin = new Padding(0, 5, 0, 5),
-                Padding = new Padding(0)
-            };
-
-            // Mesaj balonu - Hasta kendi mesajlari sag (mavi/yeşil), doktor mesajlari sol (gri/beyaz)
-            int maxBubbleWidth = (int)(containerWidth * 0.70); // %70 genişlik sınırı
-            if (maxBubbleWidth < 150) maxBubbleWidth = 150;
-
-            var bubble = new Panel
-            {
-                AutoSize = false,
-                BackColor = isPatient ? PatientMessageColor : DoctorMessageColor,
-                Padding = new Padding(10, 8, 10, 8),
-                Tag = isPatient // Tag ile hasta/doktor bilgisini sakla
-            };
-
-            // Mesaj metni - Doktor sayfasıyla aynı stil
-            var lblContent = new Label
-            {
-                Text = msg.Content,
-                Font = new Font("Segoe UI", 10F),
-                ForeColor = isPatient ? Color.White : TextPrimary,
-                AutoSize = true,
-                MaximumSize = new Size(maxBubbleWidth - 20, 0), // Padding payı
-                BackColor = Color.Transparent,
-                Location = new Point(10, 8)
-            };
-            bubble.Controls.Add(lblContent);
-
-            // Zaman ve Durum - Doktor sayfasıyla aynı stil
-            string timeText = msg.SentAt.ToString("HH:mm");
-            if (isPatient) timeText += (msg.IsRead ? " ✓✓" : " ✓");
-
-            var lblTime = new Label
-            {
-                Text = timeText,
-                Font = new Font("Segoe UI", 7.5F),
-                ForeColor = isPatient ? Color.FromArgb(220, 255, 255, 255) : TextSecondary,
-                AutoSize = true,
-                BackColor = Color.Transparent
-            };
-            
-            // Zaman etiketini ekle
-            bubble.Controls.Add(lblTime);
-            
-            // Boyutları hesapla
-            int contentWidth = lblContent.PreferredWidth;
-            int contentHeight = lblContent.PreferredHeight;
-            int timeWidth = lblTime.PreferredWidth;
-            int timeHeight = lblTime.PreferredHeight;
-
-            // Balon genişliği
-            int bubbleWidth = Math.Max(contentWidth, timeWidth) + 25;
-            if (bubbleWidth > maxBubbleWidth) bubbleWidth = maxBubbleWidth;
-            if (bubbleWidth < 80) bubbleWidth = 80; // Minimum genişlik
-
-            int bubbleHeight = contentHeight + timeHeight + 15; // 15px padding toplam
-            
-            // Zamanı sağ alt köşeye yerleştir
-            lblTime.Location = new Point(bubbleWidth - timeWidth - 8, bubbleHeight - timeHeight - 5);
-
-            bubble.Size = new Size(bubbleWidth, bubbleHeight);
-
-            // Sağ tıklama menüsü (WhatsApp tarzı silme seçenekleri)
-            var contextMenu = new ContextMenuStrip();
-            contextMenu.Font = new Font("Segoe UI", 10F);
-            
-            // Benden Sil seçeneği (herkes için)
-            var menuDeleteForMe = new ToolStripMenuItem("🗑 Benden Sil");
-            menuDeleteForMe.Click += (s, e) =>
-            {
-                var result = XtraMessageBox.Show(
-                    "Bu mesaj sadece sizin görünümünüzden silinecek. Devam etmek istiyor musunuz?", 
-                    "Benden Sil",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                if (result == DialogResult.Yes)
-                {
-                    try
-                    {
-                        _messageService.DeleteMessageForMe(msg.Id, AuthContext.UserId);
-                        LoadMessages();
-                    }
-                    catch (Exception ex)
-                    {
-                        XtraMessageBox.Show("Hata: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-            };
-            contextMenu.Items.Add(menuDeleteForMe);
-
-            // Herkesten Sil seçeneği KALDIRILDI (Veritabanı desteği yok)
-            /*
-            if (isPatient)
-            {
-                var menuDeleteForEveryone = new ToolStripMenuItem("⚠ Herkesten Sil");
-                // ...
-            }
-            */
-
-            // Balona sağ tık menüsü ata
-            bubble.ContextMenuStrip = contextMenu;
-            lblContent.ContextMenuStrip = contextMenu;
-            lblTime.ContextMenuStrip = contextMenu;
-
-            // Yuvarlak köşeler - Doktor sayfasıyla aynı stil
-            bubble.Paint += (s, e) =>
-            {
-                var rect = bubble.ClientRectangle;
-                rect.Width -= 1; rect.Height -= 1;
-                using (var path = GetRoundedRectPath(rect, 12))
-                using (var brush = new SolidBrush(bubble.BackColor))
-                using (var pen = new Pen(isPatient ? PatientMessageColor : DoctorMessageBorderColor, 1))
-                {
-                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                    e.Graphics.FillPath(brush, path);
-                    if (!isPatient) e.Graphics.DrawPath(pen, path);
-                }
-            };
-
-            // Hasta mesaji sagda, doktor mesaji solda
-            if (isPatient)
-            {
-                container.Controls.Add(bubble);
-                bubble.Location = new Point(containerWidth - bubble.Width - 15, 0);
-                bubble.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            }
-            else
-            {
-                container.Controls.Add(bubble);
-                bubble.Location = new Point(5, 0);
-                bubble.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-            }
-
-            container.Height = bubble.Height + 10;
-
-            // Container resize olduğunda bubble'ı yeniden konumlandır
-            container.Resize += (s, e) =>
-            {
-                if (isPatient)
-                    bubble.Location = new Point(container.Width - bubble.Width - 15, 0);
-                else
-                    bubble.Location = new Point(5, 0);
-            };
-
-            return container;
-        }
-
-        /// <summary>
-        /// Yuvarlatilmis dikdortgen path olusturur
-        /// </summary>
-        private GraphicsPath GetRoundedRectPath(Rectangle rect, int radius)
-        {
-            var path = new GraphicsPath();
-            int d = radius * 2;
-            
-            path.AddArc(rect.X, rect.Y, d, d, 180, 90);
-            path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90);
-            path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
-            path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
-            path.CloseFigure();
-            
-            return path;
-        }
-
-        private void BtnSend_Click(object sender, EventArgs e)
-        {
-            // Boş mesaj gönderme
-            if (string.IsNullOrWhiteSpace(txtMessage.Text))
-                return;
-
-            _messageService.SendMessage(AuthContext.UserId, _doctorId, txtMessage.Text.Trim());
-            txtMessage.Text = string.Empty;
-            LoadMessages();
+            StartAutoRefresh();
         }
 
         private void InitializeComponent()
         {
             this.SuspendLayout();
-            this.ClientSize = new System.Drawing.Size(900, 600);
+            this.ClientSize = new Size(1000, 600);
             this.Name = "FrmMessagesPatient";
+            this.Text = "Mesajlarım";
+            this.FormBorderStyle = FormBorderStyle.None;
             this.ResumeLayout(false);
+        }
+
+        private void SetupUI()
+        {
+            this.BackColor = BackgroundColor;
+            this.Padding = new Padding(20);
+
+            var mainPanel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.White,
+                Padding = new Padding(0)
+            };
+            // Rounded corners for main panel
+            mainPanel.Paint += (s, e) => {
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                using (var pen = new Pen(Color.FromArgb(226, 232, 240), 1))
+                {
+                    e.Graphics.DrawRectangle(pen, 0, 0, mainPanel.Width - 1, mainPanel.Height - 1);
+                }
+            };
+
+            // 1. Header (Doktor Bilgisi)
+            var headerPanel = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 60,
+                BackColor = Color.FromArgb(240, 248, 255), // Light AliceBlue
+                Padding = new Padding(20, 0, 20, 0)
+            };
+
+            lblDoctorName = new Label
+            {
+                Text = "Doktorunuz: Yükleniyor...",
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                ForeColor = PrimaryColor,
+                AutoSize = true,
+                Location = new Point(20, 18)
+            };
+            headerPanel.Controls.Add(lblDoctorName);
+            mainPanel.Controls.Add(headerPanel);
+
+            // 3. Bottom (Mesaj Gönderme)
+            var bottomPanel = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 70,
+                BackColor = Color.White,
+                Padding = new Padding(20, 15, 20, 15)
+            };
+            // Top border for bottom panel
+            bottomPanel.Paint += (s, e) => {
+                using (var pen = new Pen(Color.FromArgb(230, 230, 230), 1))
+                    e.Graphics.DrawLine(pen, 0, 0, bottomPanel.Width, 0);
+            };
+
+            btnSend = new SimpleButton
+            {
+                Text = "Gönder ➤",
+                Dock = DockStyle.Right,
+                Width = 100,
+                Appearance = { BackColor = PrimaryColor, ForeColor = Color.White, Font = new Font("Segoe UI", 10F, FontStyle.Bold) }
+            };
+            btnSend.Click += (s, e) => SendMessage();
+
+            txtMessage = new TextEdit
+            {
+                Dock = DockStyle.Fill,
+                Properties = { NullValuePrompt = "Mesajınızı yazın...", AutoHeight = false }
+            };
+            txtMessage.Properties.Appearance.Font = new Font("Segoe UI", 10F);
+            txtMessage.Properties.Padding = new Padding(5);
+            txtMessage.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) SendMessage(); };
+
+            // Spacer between text and button
+            var spacer = new Panel { Dock = DockStyle.Right, Width = 10 };
+
+            bottomPanel.Controls.Add(txtMessage);
+            bottomPanel.Controls.Add(spacer);
+            bottomPanel.Controls.Add(btnSend);
+            mainPanel.Controls.Add(bottomPanel);
+
+            // 2. Chat Area (Middle)
+            pnlChatMessages = new Panel
+            {
+                Dock = DockStyle.Fill,
+                AutoScroll = true,
+                BackColor = Color.FromArgb(245, 247, 250), // Hafif gri arka plan
+                Padding = new Padding(20)
+            };
+            mainPanel.Controls.Add(pnlChatMessages);
+            pnlChatMessages.BringToFront(); // Ensure it's not covered
+
+            this.Controls.Add(mainPanel);
+        }
+
+        private void LoadPatientData()
+        {
+            _currentPatient = _patientRepo.GetById(AuthContext.UserId);
+            if (_currentPatient != null)
+            {
+                // Doktor adını bulmak için user repo gerekebilir ama şimdilik basitçe
+                // Repository'de GetDoctorName gibi bir metod yoksa, User tablosundan çekmek lazım
+                // PatientRepository.GetFullPatientById zaten user bilgisini getiriyor ama doktor adını getirmiyor
+                // Şimdilik "Dr. Diyetisyen" yazalım veya doktor ID'den çekelim
+                lblDoctorName.Text = $"👨‍⚕️ Doktorunuzla Sohbet";
+            }
+        }
+
+        private void LoadMessages()
+        {
+            if (_currentPatient == null) return;
+
+            pnlChatMessages.Controls.Clear();
+            try
+            {
+                var messages = _messageService.GetConversation(AuthContext.UserId, _currentPatient.DoctorId);
+                
+                int yPos = 20;
+                foreach (var msg in messages.OrderBy(m => m.SentAt))
+                {
+                    var bubble = CreateMessageBubble(msg);
+                    
+                    // Konumlandırma
+                    if (msg.FromUserId == AuthContext.UserId)
+                    {
+                        // Benim mesajım - Sağda
+                        bubble.Location = new Point(pnlChatMessages.Width - bubble.Width - 40, yPos); // Scrollbar payı
+                    }
+                    else
+                    {
+                        // Doktor mesajı - Solda
+                        bubble.Location = new Point(20, yPos);
+                    }
+
+                    pnlChatMessages.Controls.Add(bubble);
+                    yPos += bubble.Height + 15; // Baloncuklar arası boşluk
+                }
+
+                // En alta scroll
+                pnlChatMessages.VerticalScroll.Value = pnlChatMessages.VerticalScroll.Maximum;
+            }
+            catch (Exception ex)
+            {
+                // Sessiz hata veya log
+                System.Diagnostics.Debug.WriteLine(ex.Message);
+            }
+        }
+
+        private Panel CreateMessageBubble(DiyetisyenOtomasyonu.Domain.Message msg)
+        {
+            bool isMine = msg.FromUserId == AuthContext.UserId;
+
+            var bubble = new Panel
+            {
+                Width = 400, // Sabit genişlik yerine içeriğe göre değişebilir ama basitlik için max width
+                AutoSize = true,
+                MinimumSize = new Size(100, 50),
+                BackColor = isMine ? BubbleMyColor : BubbleOtherColor,
+                Padding = new Padding(15)
+            };
+            
+            // Rounded corners logic would go here in Paint event if needed
+            // For now, simple colored panels
+
+            var lblContent = new Label
+            {
+                Text = msg.Content,
+                Font = new Font("Segoe UI", 10F),
+                ForeColor = isMine ? Color.White : Color.FromArgb(50, 50, 50),
+                Location = new Point(15, 15),
+                MaximumSize = new Size(370, 0), // Wrap text
+                AutoSize = true
+            };
+
+            var lblTime = new Label
+            {
+                Text = msg.SentAt.ToString("HH:mm"),
+                Font = new Font("Segoe UI", 8F),
+                ForeColor = isMine ? Color.FromArgb(200, 255, 255) : Color.Gray,
+                Location = new Point(15, lblContent.Bottom + 5),
+                AutoSize = true
+            };
+
+            bubble.Controls.Add(lblContent);
+            bubble.Controls.Add(lblTime);
+            
+            // AutoSize panel height calculation workaround
+            bubble.Height = lblTime.Bottom + 15;
+
+            return bubble;
+        }
+
+        private void SendMessage()
+        {
+            if (_currentPatient == null || string.IsNullOrWhiteSpace(txtMessage.Text)) return;
+
+            try
+            {
+                _messageService.SendMessage(AuthContext.UserId, _currentPatient.DoctorId, txtMessage.Text);
+                txtMessage.Text = "";
+                LoadMessages();
+            }
+            catch (Exception ex)
+            {
+                XtraMessageBox.Show($"Mesaj gönderilemedi: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void StartAutoRefresh()
+        {
+            _refreshTimer = new System.Windows.Forms.Timer();
+            _refreshTimer.Interval = 5000;
+            _refreshTimer.Tick += (s, e) => LoadMessages();
+            _refreshTimer.Start();
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            _refreshTimer?.Stop();
+            _refreshTimer?.Dispose();
+            base.OnFormClosing(e);
         }
     }
 }

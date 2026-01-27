@@ -293,8 +293,9 @@ namespace DiyetisyenOtomasyonu.Forms.Patient
             waistSeries.ArgumentDataMember = "Date";
             waistSeries.ValueDataMembers.AddRange(new[] { "Waist" });
             waistSeries.DataSource = orderedData;
-            ((LineSeriesView)waistSeries.View).Color = PrimaryGreen;
-            ((LineSeriesView)waistSeries.View).LineStyle.Thickness = 3;
+            ((SplineSeriesView)waistSeries.View).Color = PrimaryGreen;
+            ((SplineSeriesView)waistSeries.View).LineStyle.Thickness = 4;
+            ((SplineSeriesView)waistSeries.View).MarkerVisibility = DevExpress.Utils.DefaultBoolean.True;
             chart.Series.Add(waistSeries);
             
             // Kalça
@@ -302,23 +303,47 @@ namespace DiyetisyenOtomasyonu.Forms.Patient
             hipSeries.ArgumentDataMember = "Date";
             hipSeries.ValueDataMembers.AddRange(new[] { "Hip" });
             hipSeries.DataSource = orderedData;
-            ((LineSeriesView)hipSeries.View).Color = InfoBlue;
-            ((LineSeriesView)hipSeries.View).LineStyle.Thickness = 3;
+            ((SplineSeriesView)hipSeries.View).Color = InfoBlue;
+            ((SplineSeriesView)hipSeries.View).LineStyle.Thickness = 4;
+            ((SplineSeriesView)hipSeries.View).MarkerVisibility = DevExpress.Utils.DefaultBoolean.True;
             chart.Series.Add(hipSeries);
+
+            // Göğüs (Yeni eklendi)
+            var chestSeries = new Series("Göğüs", ViewType.Spline);
+            chestSeries.ArgumentDataMember = "Date";
+            chestSeries.ValueDataMembers.AddRange(new[] { "Chest" });
+            chestSeries.DataSource = orderedData;
+            ((SplineSeriesView)chestSeries.View).Color = Color.FromArgb(249, 115, 22); // Orange
+            ((SplineSeriesView)chestSeries.View).LineStyle.Thickness = 4;
+            ((SplineSeriesView)chestSeries.View).MarkerVisibility = DevExpress.Utils.DefaultBoolean.True;
+            chart.Series.Add(chestSeries);
             
             chart.Legend.Visibility = DevExpress.Utils.DefaultBoolean.True;
-            chart.Legend.AlignmentHorizontal = LegendAlignmentHorizontal.Right;
-            chart.Legend.AlignmentVertical = LegendAlignmentVertical.TopOutside;
+            chart.Legend.AlignmentHorizontal = LegendAlignmentHorizontal.Center;
+            chart.Legend.AlignmentVertical = LegendAlignmentVertical.BottomOutside;
+            chart.Legend.Direction = LegendDirection.LeftToRight;
             
-            // Diagram ayarları
+            // Diagram ayarları (Güvenli Cast)
+            if (chart.Diagram == null)
+            {
+                chart.Diagram = new XYDiagram();
+            }
+
             if (chart.Diagram is XYDiagram diagram)
             {
                 diagram.DefaultPane.BackColor = Color.White;
                 diagram.DefaultPane.BorderVisible = false;
-                diagram.AxisX.Label.Font = new Font("Segoe UI", 8F);
-                diagram.AxisY.Label.Font = new Font("Segoe UI", 8F);
+                
+                diagram.AxisX.Label.Font = new Font("Segoe UI", 9F);
+                diagram.AxisY.Label.Font = new Font("Segoe UI", 9F);
+                
                 diagram.AxisX.DateTimeScaleOptions.MeasureUnit = DateTimeMeasureUnit.Day;
                 diagram.AxisX.DateTimeScaleOptions.GridAlignment = DateTimeGridAlignment.Day;
+                
+                // Grid çizgileri
+                diagram.AxisY.GridLines.Visible = true;
+                diagram.AxisY.GridLines.Color = Color.FromArgb(240, 240, 240);
+                diagram.AxisX.GridLines.Visible = false;
             }
         }
         

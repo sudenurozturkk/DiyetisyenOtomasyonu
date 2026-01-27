@@ -33,7 +33,8 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
             _dataAggregator = new PatientDataAggregator();
             
             // OpenRouter API Entegrasyonu
-            _aiService = new GeminiAIService("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");
+            // API key'inizi buraya yazın
+            _aiService = new GeminiAIService("API_KEYINIZI_YAZIN");
 
             _responseTemplates = InitializeResponseTemplates();
         }
@@ -353,9 +354,16 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
         public async Task<AIAnalysisResult> GetComprehensiveAnalysisAsync(int patientId)
         {
             string context = _dataAggregator.AggregatePatientData(patientId);
-            // GeminiAIService içindeki AnalyzePatientDataAsync zaten bu context'i kullanıyor
-            // Ancak prompt'u daha detaylı hale getirmek için servisi güncelleyeceğiz
             return await _aiService.AnalyzePatientDataAsync(context, patientId);
+        }
+
+        /// <summary>
+        /// STRICT JSON formatında yapılandırılmış diyetisyen desteği sağlar
+        /// </summary>
+        public async Task<DietitianSupportResponse> GetStructuredAnalysisAsync(int patientId)
+        {
+            string context = _dataAggregator.AggregatePatientData(patientId);
+            return await _aiService.GetStructuredAnalysisAsync(context);
         }
 
         /// <summary>
@@ -391,133 +399,32 @@ Cevabın profesyonel, kısa ve net olsun.";
             if (string.IsNullOrWhiteSpace(question))
                 return "Lütfen bir soru sorun.";
 
-            string lowerQuestion = question.ToLowerInvariant();
+            try
+            {
+                // Kullanıcı gerçek API istediği için senkron metod içinde asenkron çağrı yapıyoruz.
+                // Not: UI thread'inde deadlock riskine karşı Task.Run kullanıyoruz.
+                string context = "";
+                if (patientId > 0)
+                {
+                    context = _dataAggregator.AggregatePatientData(patientId);
+                }
 
-            // Anahtar kelime eşleştirme
-            if (lowerQuestion.Contains("su") || lowerQuestion.Contains("sıvı"))
-            {
-                return GetRandomResponse("water");
-            }
-            if (lowerQuestion.Contains("protein") || lowerQuestion.Contains("et") || lowerQuestion.Contains("balık"))
-            {
-                return GetRandomResponse("protein");
-            }
-            if (lowerQuestion.Contains("kilo") || lowerQuestion.Contains("zayıfla") || lowerQuestion.Contains("diyet"))
-            {
-                return GetRandomResponse("weight");
-            }
-            if (lowerQuestion.Contains("egzersiz") || lowerQuestion.Contains("spor") || lowerQuestion.Contains("hareket"))
-            {
-                return GetRandomResponse("exercise");
-            }
-            if (lowerQuestion.Contains("şeker") || lowerQuestion.Contains("tatlı") || lowerQuestion.Contains("karbonhidrat"))
-            {
-                return GetRandomResponse("sugar");
-            }
-            if (lowerQuestion.Contains("kahvaltı") || lowerQuestion.Contains("sabah"))
-            {
-                return GetRandomResponse("breakfast");
-            }
-            if (lowerQuestion.Contains("akşam") || lowerQuestion.Contains("gece"))
-            {
-                return GetRandomResponse("dinner");
-            }
-            if (lowerQuestion.Contains("meyve") || lowerQuestion.Contains("sebze"))
-            {
-                return GetRandomResponse("fruits");
-            }
+                string prompt = string.IsNullOrWhiteSpace(context)
+                    ? question
+                    : $"Aşağıdaki hasta verilerini dikkate alarak, bir diyetisyen asistanı olarak şu soruyu cevapla:\nSORU: {question}\n\nHASTA VERİLERİ:\n{context}\n\nCevabın profesyonel, kısa ve net olsun.";
 
-            return GetRandomResponse("general");
-        }
-
-        private string GetRandomResponse(string category)
-        {
-            if (_responseTemplates.TryGetValue(category, out var responses))
-            {
-                var random = new Random();
-                return responses[random.Next(responses.Length)];
+                return Task.Run(async () => await _aiService.GetAIResponseAsync(prompt)).GetAwaiter().GetResult();
             }
-            return "Bu konuda size yardımcı olabilirim. Lütfen daha spesifik bir soru sorun.";
+            catch (Exception ex)
+            {
+                return "AI servisine bağlanırken hata oluştu: " + ex.Message;
+            }
         }
 
         private Dictionary<string, string[]> InitializeResponseTemplates()
         {
-            return new Dictionary<string, string[]>
-            {
-                {
-                    "water", new[]
-                    {
-                        "Günde en az 2-2.5 litre su içmeniz önerilir. Vücudunuzun kilo başına 30ml suya ihtiyacı vardır.",
-                        "Su içmeyi hatırlamak için yanınızda şişe taşıyın ve her saat başı bir bardak için.",
-                        "Kahve ve çay su ihtiyacınızı karşılamaz. Saf su tüketimini artırın."
-                    }
-                },
-                {
-                    "protein", new[]
-                    {
-                        "Günlük protein ihtiyacınız kilo başına 0.8-1.2 gram arasındadır. Tavuk, balık, yumurta iyi kaynaklardır.",
-                        "Bitkisel proteinler için mercimek, nohut ve kinoa tüketebilirsiniz.",
-                        "Her ana öğünde avuç içi kadar protein kaynağı tüketmeye çalışın."
-                    }
-                },
-                {
-                    "weight", new[]
-                    {
-                        "Sağlıklı kilo vermek için haftada 0.5-1 kg kayıp idealdir. Sabırlı olun!",
-                        "Kalori açığı oluşturmak önemli ama aşırı kısıtlama metabolizmayı yavaşlatır.",
-                        "Kilo vermek maraton, sprint değil. Sürdürülebilir alışkanlıklar kazanın."
-                    }
-                },
-                {
-                    "exercise", new[]
-                    {
-                        "Haftada en az 150 dakika orta yoğunlukta egzersiz yapmanız önerilir.",
-                        "Yürüyüş basit ama etkili bir egzersizdir. Günde 30 dakika ile başlayın.",
-                        "Direnç egzersizleri kas kütlenizi korur ve metabolizmayı hızlandırır."
-                    }
-                },
-                {
-                    "sugar", new[]
-                    {
-                        "Günlük şeker tüketimini 25 gramın altında tutmaya çalışın.",
-                        "Doğal şeker kaynağı olarak meyveleri tercih edin, işlenmiş şekerlerden kaçının.",
-                        "Şeker isteği geldiğinde tarçınlı çay veya bitter çikolata (1-2 kare) tercih edin."
-                    }
-                },
-                {
-                    "breakfast", new[]
-                    {
-                        "Kahvaltı günün en önemli öğünüdür. Protein içeren bir kahvaltı uzun süre tok tutar.",
-                        "İdeal kahvaltı: Yumurta + tam tahıl + sebze + sağlıklı yağ",
-                        "Kahvaltıyı atlamak metabolizmayı yavaşlatır ve gün içinde aşırı yemeye neden olabilir."
-                    }
-                },
-                {
-                    "dinner", new[]
-                    {
-                        "Akşam yemeğini yatmadan 2-3 saat önce yemeye çalışın.",
-                        "Akşam öğünü hafif olmalı: Sebze ağırlıklı + az protein",
-                        "Gece atıştırma isteği gelirse ılık süt veya papatya çayı için."
-                    }
-                },
-                {
-                    "fruits", new[]
-                    {
-                        "Günde 2-3 porsiyon meyve tüketimi idealdir. Meyveleri öğün arasında yiyin.",
-                        "Sebzelerin yarısını çiğ tüketmeye çalışın, vitamin kaybını önleyin.",
-                        "Mevsim meyve ve sebzelerini tercih edin, daha besleyici ve ekonomiktir."
-                    }
-                },
-                {
-                    "general", new[]
-                    {
-                        "Sağlıklı beslenme bir yaşam tarzıdır, kısa vadeli diyet değil.",
-                        "Hedeflerinize ulaşmak için sabırlı ve tutarlı olun.",
-                        "Diyetisyeninizle düzenli iletişim halinde kalın.",
-                        "Her yeni gün sağlıklı seçimler için yeni bir fırsattır!"
-                    }
-                }
-            };
+            // Artık gerçek API kullanıldığı için şablonlara gerek yok
+            return new Dictionary<string, string[]>();
         }
     }
 

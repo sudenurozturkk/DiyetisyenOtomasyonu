@@ -14,6 +14,7 @@ namespace DiyetisyenOtomasyonu.Domain
         public UserRole Role { get; set; }
         public DateTime KayitTarihi { get; set; }
         public bool AktifMi { get; set; }
+        public string ProfilePhoto { get; set; } // Profil fotoğrafı dosya yolu
 
         public User()
         {

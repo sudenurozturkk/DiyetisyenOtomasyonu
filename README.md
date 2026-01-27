@@ -1,284 +1,266 @@
-# Diyetisyen Hasta Otomasyonu Sistemi
+# ğŸ¥ DiyetPro - Diyetisyen Hasta Takip Otomasyonu
 
-## ?? Proje Özeti
+<div align="center">
 
-Diyetisyen Hasta Otomasyonu, diyetisyenlerin hasta kayıtlarını, kilo takibini, haftalık diyet planlarını ve hedeflerini yönetebilmeleri için geliştirilmiş profesyonel bir Windows Forms uygulamasıdır.
+![Version](https://img.shields.io/badge/version-2.0-blue.svg)
+![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)
+![.NET](https://img.shields.io/badge/.NET_Framework-4.8-purple.svg)
+![DevExpress](https://img.shields.io/badge/DevExpress-25.1-orange.svg)
+![MySQL](https://img.shields.io/badge/MySQL-8.4-blue.svg)
 
-### ?? Özellikler
+**Profesyonel Diyetisyen Hasta Takip ve YÃ¶netim Sistemi**
 
-#### Doktor Modülü
-- ? Hasta kayıt ve yönetimi
-- ? Haftalık diyet planı atama
-- ? Öğün bazında plan oluşturma
-- ? Hedef ve not takibi
-- ? Hasta mesajlaşma
-- ? Analitik ve grafikler (kilo trendi, makro dağılımı)
+[ğŸ“– DokÃ¼mantasyon](DOCS/README.md) | [ğŸ§ª Test PlanÄ±](DOCS/TEST_PLANI.md) | [ğŸ“Š Final Rapor](DOCS/FINAL_RAPOR.md)
 
-#### Hasta Modülü
-- ? Haftalık menü görüntüleme
-- ? Öğün onaylama ("Yedim" işaretleme)
-- ? Hedef takibi (su, kilo, adım, protein vb.)
-- ? İlerleme grafikleri
-- ? Doktor ile mesajlaşma
-- ? AI Asistan (diyet önerileri)
+</div>
 
-## ??? Teknoloji Yığını
+---
 
-- **.NET Framework:** 4.8
-- **UI Framework:** Windows Forms + DevExpress WinForms v25.1
-- **Programlama Dili:** C# 12.0
-- **Mimari:** Katmanlı mimari (Domain, Infrastructure, Forms, Shared)
-- **Veri:** In-Memory (opsiyonel JSON persist hazır)
+## ğŸ“‹ Proje Ã–zeti
 
-## ?? Proje Yapısı
+DiyetPro, **nesne yÃ¶nelimli tasarÄ±m** prensipleri ve **yazÄ±lÄ±m mÃ¼hendisliÄŸi yÃ¶ntemleri** kullanÄ±larak geliÅŸtirilmiÅŸ, **9 adet akÄ±llÄ± algoritma** iÃ§eren profesyonel bir diyetisyen hasta takip otomasyonudur.
+
+### âœ¨ Ã–ne Ã‡Ä±kan Ã–zellikler
+
+- ğŸ§® **AkÄ±llÄ± Algoritmalar:** BMI, BMR, TDEE hesaplama, risk analizi
+- ğŸ” **GÃ¼venli Kimlik DoÄŸrulama:** PBKDF2 ÅŸifre hash, rol bazlÄ± yetki
+- ğŸ“Š **GÃ¶rsel Raporlama:** Kilo trendi, diyet uyum grafikleri
+- ğŸ’¬ **GerÃ§ek ZamanlÄ± MesajlaÅŸma:** Diyetisyen-hasta iletiÅŸimi
+- ğŸ¯ **Hedef Takibi:** Su, kilo, adÄ±m, protein hedefleri
+- ğŸ“… **Randevu YÃ¶netimi:** Takvim ve bildirim sistemi
+- ğŸ¤– **AI Asistan:** Yapay zeka destekli Ã¶neri sistemi (stub)
+
+---
+
+## ğŸ¯ Akademik Kriterlere Uygunluk
+
+| Kriter | Puan | Durum |
+|--------|------|-------|
+| Proje Analizi | 10 | âœ… [MALIYET_KESTIRIM.md](DOCS/MALIYET_KESTIRIM.md) |
+| UseCase ve SÄ±nÄ±f DiyagramlarÄ± | 10 | âœ… [USECASE](DOCS/USECASE_DIYAGRAMI.md), [SINIF](DOCS/SINIF_DIYAGRAMI.md) |
+| ZamanÄ±nda Teslim | 10 | âœ… |
+| UI ve KullanÄ±labilirlik | 10 | âœ… Modern DevExpress UI |
+| Kodlama ve Ã‡Ä±ktÄ± | 30 | âœ… 16,300+ satÄ±r kod |
+| Test | 10 | âœ… [TEST_PLANI.md](DOCS/TEST_PLANI.md) - %96.5 baÅŸarÄ± |
+| DokÃ¼mantasyon | 10 | âœ… [DOCS KlasÃ¶rÃ¼](DOCS/) |
+| VeritabanÄ± TasarÄ±mÄ± | 10 | âœ… [ER_DIYAGRAMI.md](DOCS/ER_DIYAGRAMI.md) |
+
+---
+
+## ğŸ§  AkÄ±llÄ± Algoritmalar (9 Adet)
+
+| No | Algoritma | Tip | FormÃ¼l/AÃ§Ä±klama |
+|----|-----------|-----|-----------------|
+| 1 | **BMI Hesaplama** | Hesaplama | `Kilo / (Boy/100)Â²` |
+| 2 | **BMI Kategorizasyonu** | Karar Verme | ZayÄ±f/Normal/Obez sÄ±nÄ±flandÄ±rma |
+| 3 | **BMR Hesaplama** | Hesaplama | Mifflin-St Jeor denklemi |
+| 4 | **TDEE Hesaplama** | Hesaplama | BMR Ã— Aktivite Ã§arpanÄ± |
+| 5 | **Ä°deal Kilo AralÄ±ÄŸÄ±** | Hesaplama | BMI 18.5-24.9 aralÄ±ÄŸÄ± |
+| 6 | **Ä°lerleme YÃ¼zdesi** | Hesaplama | `(GÃ¼ncel/Hedef) Ã— 100` |
+| 7 | **Diyet Uyum OranÄ±** | Ä°statistik | Ã–ÄŸÃ¼n tamamlama analizi |
+| 8 | **Risk Analizi** | Karar Verme | HÄ±zlÄ± kilo deÄŸiÅŸimi tespiti |
+| 9 | **Kilo Trend Analizi** | Ä°statistik | Zaman serisi analizi |
+
+---
+
+## ğŸ—ï¸ Teknoloji YÄ±ÄŸÄ±nÄ±
+
+| BileÅŸen | Teknoloji | Versiyon |
+|---------|-----------|----------|
+| **Platform** | Windows Forms | .NET Framework 4.8 |
+| **Dil** | C# | 12.0 |
+| **UI Framework** | DevExpress WinForms | 25.1.5 |
+| **VeritabanÄ±** | MySQL | 8.4.0 |
+| **Mimari** | 4-Tier Layered | Domain/Repo/Service/Forms |
+| **GÃ¼venlik** | PBKDF2 | 10,000 iterations |
+
+---
+
+## ğŸ“ Proje YapÄ±sÄ±
 
 ```
 DiyetisyenOtomasyonu/
-?
-??? Domain/                      # Veri modelleri
-?   ??? Enums.cs                # UserRole, MealType, GoalType
-?   ??? User.cs                 # Temel kullanıcı
-?   ??? Doctor.cs               # Diyetisyen
-?   ??? Patient.cs              # Hasta (BMI hesaplama dahil)
-?   ??? DietWeek.cs             # Haftalık plan
-?   ??? DietDay.cs              # Günlük plan
-?   ??? MealItem.cs             # Öğün kalemi
-?   ??? WeightEntry.cs          # Kilo kaydı
-?   ??? Goal.cs                 # Hedef
-?   ??? Note.cs                 # Doktor notu
-?   ??? Message.cs              # Mesaj
-?   ??? ProgressSnapshot.cs     # İlerleme metrikleri
-?
-??? Infrastructure/
-?   ??? Persistence/
-?   ?   ??? IDataStore.cs       # Veri deposu arayüzü
-?   ?   ??? InMemoryStore.cs    # Bellek içi depo (Singleton)
-?   ??? Security/
-?   ?   ??? PasswordHasher.cs   # SHA256 + salt
-?   ?   ??? AuthContext.cs      # Oturum yönetimi
-?   ??? Services/
-?   ?   ??? PatientService.cs   # Hasta CRUD
-?   ?   ??? DietService.cs      # Diyet planı yönetimi
-?   ?   ??? GoalService.cs      # Hedef yönetimi
-?   ?   ??? MessageService.cs   # Mesajlaşma
-?   ?   ??? AiAssistantService.cs # AI stub
-?   ??? Seed/
-?       ??? DataSeeder.cs       # Örnek veri
-?
-??? Forms/
-?   ??? Login/
-?   ?   ??? FrmLogin.cs         # Giriş formu
-?   ??? Doctor/
-?   ?   ??? FrmDoctorShell.cs   # Doktor ana kabuk (Ribbon)
-?   ?   ??? FrmPatients.cs      # Hasta yönetimi
-?   ?   ??? FrmAssignPlans.cs   # Plan atama
-?   ?   ??? FrmGoalsNotes.cs    # Hedef ve notlar
-?   ?   ??? FrmMessagesDoctor.cs # Mesajlaşma
-?   ?   ??? FrmAnalytics.cs     # Analitik
-?   ??? Patient/
-?       ??? FrmPatientShell.cs  # Hasta ana kabuk
-?       ??? FrmWeeklyMenu.cs    # Haftalık menü
-?       ??? FrmGoals.cs         # Hedeflerim
-?       ??? FrmProgress.cs      # İlerleme
-?       ??? FrmMessagesPatient.cs # Mesajlaşma
-?       ??? FrmAiAssistant.cs   # AI Asistan
-?
-??? Bootstrap/
-?   ??? ThemeBootstrapper.cs    # DevExpress tema ayarları
-?
-??? Shared/
-?   ??? UiStyles.cs             # Ortak stiller ve renkler
-?   ??? Guards.cs               # Validasyon yardımcıları
-?
-??? Program.cs                  # Giriş noktası
-??? App.config                  # Yapılandırma
-
+â”œâ”€â”€ Domain/                 # Veri modelleri (19 entity)
+â”‚   â”œâ”€â”€ User.cs            # Temel kullanÄ±cÄ±
+â”‚   â”œâ”€â”€ Patient.cs         # Hasta (BMI, TDEE hesaplamalarÄ±)
+â”‚   â”œâ”€â”€ Doctor.cs          # Diyetisyen
+â”‚   â””â”€â”€ ...
+â”œâ”€â”€ Infrastructure/
+â”‚   â”œâ”€â”€ Database/          # MySQL baÄŸlantÄ±sÄ±
+â”‚   â”œâ”€â”€ Repositories/      # Repository pattern (16 repo)
+â”‚   â”œâ”€â”€ Security/          # PBKDF2 hash, AuthContext
+â”‚   â””â”€â”€ Services/          # Ä°ÅŸ mantÄ±ÄŸÄ± (11 service)
+â”œâ”€â”€ Forms/
+â”‚   â”œâ”€â”€ Doctor/            # Diyetisyen formlarÄ± (13)
+â”‚   â”œâ”€â”€ Patient/           # Hasta formlarÄ± (9)
+â”‚   â””â”€â”€ Login/             # GiriÅŸ formlarÄ±
+â”œâ”€â”€ Shared/                # Ortak stiller, validasyon
+â”œâ”€â”€ DOCS/                  # ğŸ“š Akademik DokÃ¼mantasyon
+â”‚   â”œâ”€â”€ README.md          # DokÃ¼man haritasÄ±
+â”‚   â”œâ”€â”€ FINAL_RAPOR.md     # Ana proje raporu
+â”‚   â”œâ”€â”€ USECASE_DIYAGRAMI.md
+â”‚   â”œâ”€â”€ SINIF_DIYAGRAMI.md
+â”‚   â”œâ”€â”€ ER_DIYAGRAMI.md
+â”‚   â”œâ”€â”€ MALIYET_KESTIRIM.md
+â”‚   â””â”€â”€ TEST_PLANI.md
+â””â”€â”€ Program.cs             # GiriÅŸ noktasÄ±
 ```
 
-## ?? Kurulum
+---
+
+## ğŸš€ Kurulum ve Ã‡alÄ±ÅŸtÄ±rma
 
 ### Gereksinimler
 
-1. **Visual Studio 2022** (veya 2019)
-2. **.NET Framework 4.8 SDK**
-3. **DevExpress WinForms v25.1** (veya uyumlu sürüm)
+- Windows 10/11
+- Visual Studio 2022
+- .NET Framework 4.8
+- MySQL Server 8.4+
+- DevExpress WinForms 25.1
 
-### Adım 1: DevExpress Referanslarını Ekleyin
-
-Proje dosyasını (DiyetisyenOtomasyonu.csproj) açın ve aşağıdaki DevExpress referanslarını ekleyin:
-
-```xml
-<ItemGroup>
-  <Reference Include="DevExpress.Data.v25.1" />
-  <Reference Include="DevExpress.Utils.v25.1" />
-  <Reference Include="DevExpress.XtraBars.v25.1" />
-  <Reference Include="DevExpress.XtraCharts.v25.1" />
-  <Reference Include="DevExpress.XtraEditors.v25.1" />
-  <Reference Include="DevExpress.XtraGrid.v25.1" />
-  <Reference Include="DevExpress.XtraLayout.v25.1" />
-  <Reference Include="DevExpress.XtraTab.v25.1" />
-  <Reference Include="DevExpress.Printing.v25.1.Core" />
-</ItemGroup>
-```
-
-**Not:** DevExpress yüklü değilse:
-- [DevExpress](https://www.devexpress.com/) sitesinden trial veya lisanslı sürüm indirin
-- NuGet üzerinden de eklenebilir (lisans gerektir)
-
-### Adım 2: Projeyi Derleyin
+### Kurulum AdÄ±mlarÄ±
 
 ```bash
-dotnet build
+# 1. MySQL veritabanÄ±nÄ± hazÄ±rlayÄ±n
+# App.config'de connection string dÃ¼zenleyin
+
+# 2. API Key yapÄ±landÄ±rmasÄ± (AI Ã¶zellikleri iÃ§in)
+# AÅŸaÄŸÄ±daki dosyalarda "API_KEYINIZI_YAZIN" yerine kendi API key'inizi yazÄ±n:
+# - Infrastructure/Services/AiAssistantService.cs
+# - Forms/Doctor/FrmAIAnalysis.cs
+# - Forms/Doctor/FrmGoalsNotes.cs
+
+# 3. Visual Studio ile aÃ§Ä±n
+# DiyetisyenOtomasyonu.sln
+
+# 4. Build edin
+msbuild DiyetisyenOtomasyonu.sln /p:Configuration=Debug
+
+# 5. Ã‡alÄ±ÅŸtÄ±rÄ±n
+cd bin\Debug
+DiyetisyenOtomasyonu.exe
 ```
 
-veya Visual Studio'da **Build > Build Solution** (Ctrl+Shift+B)
+### âš™ï¸ YapÄ±landÄ±rma
 
-### Adım 3: Çalıştırın
+**VeritabanÄ± BaÄŸlantÄ±sÄ±:**
+- `Infrastructure/Database/DatabaseConfig.cs` dosyasÄ±nda connection string'i dÃ¼zenleyin
 
-```bash
-dotnet run
-```
+**API Key (AI Ã–zellikleri iÃ§in):**
+- OpenRouter API key alÄ±n: https://openrouter.ai/
+- AÅŸaÄŸÄ±daki dosyalarda `API_KEYINIZI_YAZIN` yerine kendi API key'inizi yazÄ±n:
+  - `Infrastructure/Services/AiAssistantService.cs`
+  - `Forms/Doctor/FrmAIAnalysis.cs`
+  - `Forms/Doctor/FrmGoalsNotes.cs`
 
-veya Visual Studio'da **F5** tuşu ile
+### ğŸ‘¤ Demo HesaplarÄ±
 
-## ?? Test Kullanıcıları
-
-Uygulama ilk çalıştırıldığında örnek kullanıcılar otomatik olarak oluşturulur:
-
-### Doktor Girişi
-- **Kullanıcı Adı:** `drayse`
-- **Parola:** `12345678`
-
-### Hasta Girişi
-- **Kullanıcı Adı:** `mehmet`
-- **Parola:** `12345678`
-
-**Diğer Hastalar:**
-- zeynep / 12345678
-- ali / 12345678
-
-## ?? Kullanım
-
-### Doktor İşlemleri
-
-1. **Yeni Hasta Ekle:**
-   - "Hastalar" sekmesine gidin
-   - Sol panelden hasta bilgilerini doldurun
-   - "Hasta Ekle" butonuna tıklayın
-   - Oluşturulan kullanıcı adı/şifre hastaya verilir
-
-2. **Haftalık Plan Ata:**
-   - "Planlar" sekmesine gidin
-   - Hasta ve hafta seçin
-   - "Haftayı Yükle" butonuna tıklayın
-   - Her gün için "Öğün Ekle" ile yemekler ekleyin
-   - Önceki günden kopyalama yapabilirsiniz
-
-3. **Hedef Belirle:**
-   - "Hedef ve Notlar" sekmesine gidin
-   - Hasta seçin
-   - "Hedef Ekle" butonuyla yeni hedef oluşturun
-
-4. **Analitik Görüntüle:**
-   - "Raporlar" sekmesine gidin
-   - Hasta seçin
-   - Kilo trendi ve makro dağılımı grafiklerini görün
-
-### Hasta İşlemleri
-
-1. **Haftalık Menüyü Gör:**
-   - "Haftalık Menü" sekmesine gidin
-   - Hafta seçip "Haftayı Yükle" yapın
-   - Her öğün için "Yedim ?" işaretleyebilirsiniz
-
-2. **Hedefleri Takip Et:**
-   - "Hedeflerim" sekmesine gidin
-   - Sağ panelden hızlı güncelleme yapın (su, adım)
-
-3. **İlerleme İzle:**
-   - "İlerleme" sekmesine gidin
-   - Kilo değişimi ve haftalık tamamlama grafiklerini görün
-
-4. **AI Asistan Kullan:**
-   - "AI Asistan" sekmesine gidin
-   - Hızlı sorulardan birini seçin veya kendi sorunuzu yazın
-
-## ?? Tema ve Görünüm
-
-- **Tema:** Office 2019 Colorful
-- **Font:** Segoe UI
-- **Renk Paleti:**
-  - Primary: #3498DB (Mavi)
-  - Success: #2ECC71 (Yeşil)
-  - Danger: #E74C3C (Kırmızı)
-  - Warning: #F39C12 (Turuncu)
-  - Background: #F5F7FA (Açık gri)
-
-## ?? Güvenlik
-
-- Parolalar **SHA256 + Salt** ile hash'lenir
-- Minimum parola uzunluğu: 8 karakter
-- Rol tabanlı yetkilendirme (Doctor/Patient)
-- Kullanıcı oturumu AuthContext ile yönetilir
-
-## ?? Veri Kalıcılığı
-
-**Şu anda:** In-Memory (uygulama kapanınca veriler silinir)
-
-**Gelecek:** JSON veya EF Core + SQLite entegrasyonu hazır
-
-```csharp
-// JSON kalıcılık için (opsiyonel)
-// InMemoryStore yerine JsonFileStore kullanılabilir
-```
-
-## ?? Gelecek Geliştirmeler
-
-- [ ] SQLite + Entity Framework Core entegrasyonu
-- [ ] PDF rapor oluşturma (DevExpress.XtraPrinting)
-- [ ] Gerçek AI API entegrasyonu (OpenAI, FitTürkAI vb.)
-- [ ] Randevu yönetimi
-- [ ] SMS/Email bildirimleri
-- [ ] Mobil uygulama (Xamarin/MAUI)
-- [ ] Web arayüzü (Blazor)
-
-## ?? Kod Standartları
-
-- **Sınıf Adları:** PascalCase
-- **Metodlar:** PascalCase
-- **Değişkenler:** camelCase
-- **Private Alanlar:** _camelCase
-- **UI Elementleri:** Açıklayıcı + tip (btnEkle, txtAd, gridHastalar)
-- **Yorumlar:** Türkçe XML dokümantasyonu
-
-## ?? Bilinen Sorunlar
-
-1. **DevExpress Lisans Uyarısı:**
-   - Trial kullanıyorsanız başlangıçta uyarı çıkar
-   - Lisanslı sürümde sorun olmaz
-
-2. **Grid Refresh:**
-   - Bazı durumlarda manuel refresh gerekebilir
-   - `gridControl.RefreshDataSource()` kullanın
-
-## ?? Destek
-
-- **Geliştirici:** Sudenur Öztürk
-- **Proje Tipi:** Eğitim/Demo
-- **Versiyon:** 1.0.0
-
-## ?? Lisans
-
-Bu proje eğitim amaçlı geliştirilmiştir. DevExpress bileşenleri için ayrı lisans gereklidir.
+| Rol | KullanÄ±cÄ± AdÄ± | Åifre |
+|-----|---------------|-------|
+| ğŸ‘¨â€âš•ï¸ Diyetisyen | doktor1 | 123456 |
+| ğŸ‘¨â€âš•ï¸ Diyetisyen | doktor2 | 123456 |
+| ğŸ‘¤ Hasta | hasta1 | 123456 |
+| ğŸ‘¤ Hasta | hasta2 | 123456 |
 
 ---
 
-## ?? Öğrenme Kaynakları
+## ğŸ“Š Proje Ä°statistikleri
 
-- [DevExpress WinForms Documentation](https://docs.devexpress.com/WindowsForms/2162/winforms-controls)
-- [.NET Framework 4.8 Guide](https://docs.microsoft.com/en-us/dotnet/framework/)
-- [C# Best Practices](https://docs.microsoft.com/en-us/dotnet/csharp/)
+| Metrik | DeÄŸer |
+|--------|-------|
+| ğŸ“ Kod SatÄ±rÄ± | ~16,300 |
+| ğŸ›ï¸ SÄ±nÄ±f SayÄ±sÄ± | ~70 |
+| ğŸ–¥ï¸ Form SayÄ±sÄ± | 23 |
+| ğŸ—„ï¸ Tablo SayÄ±sÄ± | 19 |
+| ğŸ“¦ Repository | 16 |
+| âš™ï¸ Service | 11 |
+| ğŸ§® AkÄ±llÄ± Algoritma | 9 |
+| ğŸ§ª Test Case | 87 |
+| âœ… Test BaÅŸarÄ±sÄ± | %96.5 |
 
 ---
 
-**Not:** Proje DevExpress v25.1 ile test edilmiştir. Farklı versiyonlar için namespace'ler güncellenmelidir.
+## ğŸ”’ GÃ¼venlik Ã–zellikleri
+
+- âœ… **PBKDF2** ile ÅŸifre hash (10,000 iteration)
+- âœ… Her kullanÄ±cÄ± iÃ§in **benzersiz salt**
+- âœ… **Rol bazlÄ± yetkilendirme** (Doctor/Patient)
+- âœ… **Oturum yÃ¶netimi** (AuthContext)
+- âœ… **SQL Injection korumasÄ±**
+
+---
+
+## ğŸ“š DokÃ¼mantasyon
+
+TÃ¼m akademik dokÃ¼manlar `DOCS/` klasÃ¶rÃ¼nde:
+
+| DokÃ¼man | Ä°Ã§erik |
+|---------|--------|
+| [ğŸ“– FINAL_RAPOR.md](DOCS/FINAL_RAPOR.md) | KapsamlÄ± final raporu |
+| [ğŸ¯ USECASE_DIYAGRAMI.md](DOCS/USECASE_DIYAGRAMI.md) | 25 use case analizi |
+| [ğŸ—ï¸ SINIF_DIYAGRAMI.md](DOCS/SINIF_DIYAGRAMI.md) | OOP ve SOLID analizi |
+| [ğŸ—„ï¸ ER_DIYAGRAMI.md](DOCS/ER_DIYAGRAMI.md) | 19 tablo, 3NF |
+| [ğŸ’° MALIYET_KESTIRIM.md](DOCS/MALIYET_KESTIRIM.md) | 554 iÅŸlev noktasÄ± |
+| [ğŸ§ª TEST_PLANI.md](DOCS/TEST_PLANI.md) | 87 test case |
+
+---
+
+## ğŸ¨ Ekran GÃ¶rÃ¼ntÃ¼leri
+
+### Diyetisyen Paneli
+- Modern sidebar navigasyon
+- Hasta yÃ¶netimi (CRUD)
+- Diyet planÄ± oluÅŸturma
+- Grafik raporlar
+
+### Hasta Paneli
+- HaftalÄ±k menÃ¼ gÃ¶rÃ¼ntÃ¼leme
+- Ã–ÄŸÃ¼n tamamlama
+- Hedef takibi
+- Ä°lerleme grafikleri
+
+---
+
+## ğŸ”§ GeliÅŸtirme StandartlarÄ±
+
+### OOP Prensipleri
+- âœ… Encapsulation, Inheritance, Polymorphism, Abstraction
+
+### SOLID Prensipleri
+- âœ… Single Responsibility
+- âœ… Open/Closed
+- âœ… Liskov Substitution
+- âœ… Interface Segregation
+- âœ… Dependency Inversion
+
+### Design Patterns
+- âœ… Repository Pattern
+- âœ… Service Layer Pattern
+- âœ… Singleton Pattern
+- âœ… Template Method Pattern
+
+---
+
+## ğŸ“ˆ Gelecek GeliÅŸtirmeler
+
+- [ ] .NET 8 migrasyonu
+- [ ] Web versiyonu (ASP.NET Core)
+- [ ] Mobil uygulama (MAUI)
+- [ ] GerÃ§ek AI entegrasyonu (Gemini API)
+- [ ] PDF rapor oluÅŸturma
+
+---
+
+## ğŸ“ Ä°letiÅŸim
+
+**Proje Tipi:** Akademik Final Projesi  
+**Tarih:** Ocak 2026  
+**Versiyon:** 2.0 Final
+
+---
+
+<div align="center">
+
+Â© 2026 DiyetPro - TÃ¼m HaklarÄ± SaklÄ±dÄ±r
+
+</div>

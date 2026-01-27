@@ -13,11 +13,14 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Database
             {
                 // Tabloları oluştur (IF NOT EXISTS kullanıldığından güvenli)
                 CreateUsersTable(connection);
+                FixUsersTable(connection); // Yeni sütunlar ekle
                 CreatePatientsTable(connection);
+                FixPatientsTable(connection); // Yeni sütunlar ekle
                 CreateDoctorsTable(connection);
                 CreateGoalsTable(connection);
                 FixGoalsTable(connection); // Fix missing columns
                 CreateNotesTable(connection);
+                FixNotesTable(connection); // Fix missing columns
                 CreateMessagesTable(connection);
                 CreateWeightEntriesTable(connection);
                 CreateDietWeeksTable(connection);
@@ -54,9 +57,20 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Database
                     ParolaHash VARCHAR(255) NOT NULL,
                     Role INT NOT NULL,
                     KayitTarihi DATETIME NOT NULL,
-                    AktifMi TINYINT NOT NULL DEFAULT 1
+                    AktifMi TINYINT NOT NULL DEFAULT 1,
+                    ProfilePhoto VARCHAR(255)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
             ExecuteNonQuery(connection, sql);
+        }
+
+        private static void FixUsersTable(IDbConnection connection)
+        {
+            // ProfilePhoto sütunu ekle
+            try
+            {
+                ExecuteNonQuery(connection, "ALTER TABLE Users ADD COLUMN ProfilePhoto VARCHAR(255)");
+            }
+            catch { } // Sütun zaten varsa hata verir, devam et
         }
 
         private static void CreatePatientsTable(IDbConnection connection)
@@ -79,6 +93,23 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Database
                     FOREIGN KEY (Id) REFERENCES Users(Id) ON DELETE CASCADE
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
             ExecuteNonQuery(connection, sql);
+        }
+
+        private static void FixPatientsTable(IDbConnection connection)
+        {
+            // Medications sütunu ekle
+            try
+            {
+                ExecuteNonQuery(connection, "ALTER TABLE Patients ADD COLUMN Medications TEXT");
+            }
+            catch { } // Sütun zaten varsa hata verir, devam et
+
+            // AllergiesText sütunu ekle
+            try
+            {
+                ExecuteNonQuery(connection, "ALTER TABLE Patients ADD COLUMN AllergiesText TEXT");
+            }
+            catch { } // Sütun zaten varsa hata verir, devam et
         }
 
         private static void CreateDoctorsTable(IDbConnection connection)
@@ -155,6 +186,27 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Database
                     FOREIGN KEY (DoctorId) REFERENCES Users(Id) ON DELETE CASCADE
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
             ExecuteNonQuery(connection, sql);
+        }
+
+        private static void FixNotesTable(IDbConnection connection)
+        {
+            // Add missing columns if they don't exist
+            string[] alterCommands = new string[]
+            {
+                "ALTER TABLE Notes ADD COLUMN Content TEXT",
+                "ALTER TABLE Notes ADD COLUMN Date DATETIME",
+                "ALTER TABLE Notes ADD COLUMN Category INT DEFAULT 0",
+                "ALTER TABLE Notes ADD COLUMN DoctorName VARCHAR(255)"
+            };
+
+            foreach (var alterSql in alterCommands)
+            {
+                try
+                {
+                    ExecuteNonQuery(connection, alterSql);
+                }
+                catch { /* Column already exists - ignore */ }
+            }
         }
 
         private static void CreateMessagesTable(IDbConnection connection)
@@ -306,7 +358,8 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Database
             {
                 "ALTER TABLE ExerciseTasks ADD COLUMN ProgressPercentage INT DEFAULT 0",
                 "ALTER TABLE ExerciseTasks ADD COLUMN CompletedDuration INT DEFAULT 0",
-                "ALTER TABLE ExerciseTasks ADD COLUMN PatientFeedback TEXT"
+                "ALTER TABLE ExerciseTasks ADD COLUMN PatientFeedback TEXT",
+                "ALTER TABLE ExerciseTasks ADD COLUMN Notes TEXT"
             };
 
             foreach (var sql in columnsToAdd)

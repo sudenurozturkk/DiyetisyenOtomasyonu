@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
+using System.Threading.Tasks;
 using DevExpress.XtraEditors;
+using DevExpress.XtraEditors.Controls;
 using DiyetisyenOtomasyonu.Infrastructure.Services;
 using DiyetisyenOtomasyonu.Infrastructure.Repositories;
 using DiyetisyenOtomasyonu.Infrastructure.Security;
@@ -14,59 +15,65 @@ using DiyetisyenOtomasyonu.Shared;
 namespace DiyetisyenOtomasyonu.Forms.Doctor
 {
     /// <summary>
-    /// AI Analiz Paneli - Profesyonel Yeni Tasarım
-    /// Hasta analizi, kilo grafiği, kalori dağılımı, AI önerileri, örnek öğünler, besin dengesi, AI sohbet
+    /// AI Analiz Paneli - DevExpress + Gercek AI Entegrasyonu
     /// </summary>
     public class FrmAIAnalysis : XtraForm
     {
         private readonly PatientService _patientService;
         private readonly GeminiAIService _aiService;
         private readonly WeightEntryRepository _weightRepo;
+        private readonly DietRepository _dietRepo;
         private readonly AiChatRepository _chatRepo;
 
-        #region Colors
-        private readonly Color PrimaryGreen = ColorTranslator.FromHtml("#0D9488");
-        private readonly Color DarkGreen = ColorTranslator.FromHtml("#0F766E");
-        private readonly Color LightGreen = ColorTranslator.FromHtml("#CCFBF1");
-        private readonly Color SuccessGreen = ColorTranslator.FromHtml("#22C55E");
-        private readonly Color DangerRed = ColorTranslator.FromHtml("#EF4444");
-        private readonly Color WarningOrange = ColorTranslator.FromHtml("#F97316");
-        private readonly Color InfoBlue = ColorTranslator.FromHtml("#3B82F6");
-        private readonly Color BackgroundLight = ColorTranslator.FromHtml("#F8FAFC");
-        private readonly Color CardWhite = Color.White;
-        private readonly Color BorderGray = ColorTranslator.FromHtml("#E2E8F0");
+        // Renkler
+        private readonly Color Primary = ColorTranslator.FromHtml("#0D9488");
+        private readonly Color PrimaryLight = ColorTranslator.FromHtml("#14B8A6");
+        private readonly Color Success = ColorTranslator.FromHtml("#22C55E");
+        private readonly Color Warning = ColorTranslator.FromHtml("#F59E0B");
+        private readonly Color Danger = ColorTranslator.FromHtml("#EF4444");
+        private readonly Color Info = ColorTranslator.FromHtml("#3B82F6");
+        private readonly Color Purple = ColorTranslator.FromHtml("#8B5CF6");
+        private readonly Color Background = Color.White;
+        private readonly Color CardBg = Color.White;
         private readonly Color TextDark = ColorTranslator.FromHtml("#1E293B");
-        private readonly Color TextMedium = ColorTranslator.FromHtml("#64748B");
-        #endregion
+        private readonly Color TextGray = ColorTranslator.FromHtml("#64748B");
+        private readonly Color Border = ColorTranslator.FromHtml("#E2E8F0");
 
-        #region Controls
+        // DevExpress Controls
+        private PanelControl mainPanel;
         private ComboBoxEdit cmbPatient;
-        private Label lblHealthStatus, lblHeightWeight, lblDailyCalorie, lblBMI;
-        private Label lblAnalysisText;
-        private Panel pnlWeightChart, pnlCaloriePie;
-        private Label lblAiRecommendation1, lblAiRecommendation2, lblAiRecommendation3;
-        private MemoEdit txtChatInput;
-        private Panel pnlChatHistory;
-        private SimpleButton btnSendChat;
-        #endregion
+        private LabelControl lblStatus, lblHeightWeight, lblCalorie, lblBMI;
+        private LabelControl lblAnalysisText;
+        private MemoEdit txtMealRecommendations, txtHealthRecommendations;
+        private MemoEdit txtChat;
+        private PanelControl pnlChatHistory;
+        private SimpleButton btnGetAIRecommendations;
 
-        private Domain.Patient _selectedPatient;
-        private int _selectedPatientId;
-        private double[] _weightData = new double[0];
+        // Chart Panels
+        private PanelControl pnlWeightChart, pnlCaloriePie, pnlNutritionBars;
+
+        private Domain.Patient _patient;
+        private double[] _weightData;
+        private int[] _macroData = { 30, 45, 25 }; // Protein, Carb, Fat
+        private int[] _nutritionData = { 80, 70, 60, 85, 75 }; // Protein, Carb, Fat, Fiber, Calcium
 
         public FrmAIAnalysis()
         {
-            InitializeComponent();
             _patientService = new PatientService();
             _weightRepo = new WeightEntryRepository();
+            _dietRepo = new DietRepository();
             _chatRepo = new AiChatRepository();
             
-            string apiKey = Environment.GetEnvironmentVariable("OPENROUTER_API_KEY") ?? "";
-            if (!string.IsNullOrEmpty(apiKey))
+            // API Key - ortam degiskeninden veya varsayilan
+            string apiKey = Environment.GetEnvironmentVariable("OPENROUTER_API_KEY");
+            if (string.IsNullOrEmpty(apiKey))
             {
-                _aiService = new GeminiAIService(apiKey);
+                // API key'inizi buraya yazın
+                apiKey = "API_KEYINIZI_YAZIN";
             }
+            _aiService = new GeminiAIService(apiKey);
             
+            InitializeComponent();
             SetupUI();
             LoadPatients();
         }
@@ -74,666 +81,596 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
         private void InitializeComponent()
         {
             this.SuspendLayout();
-            this.ClientSize = new Size(1280, 850);
-            this.Name = "FrmAIAnalysis";
-            this.Text = "AI Analiz Paneli";
+            this.ClientSize = new Size(1200, 800);
             this.FormBorderStyle = FormBorderStyle.None;
-            this.BackColor = BackgroundLight;
-            this.Padding = new Padding(20);
+            this.BackColor = Background;
             this.ResumeLayout(false);
         }
 
         private void SetupUI()
         {
-            // Ana container - scroll destekli
-            var mainContainer = new Panel { Dock = DockStyle.Fill, AutoScroll = true, BackColor = Color.Transparent, Padding = new Padding(15) };
-            
-            // İçerik paneli - geniş layout
-            var contentPanel = new Panel { Location = new Point(15, 15), BackColor = Color.Transparent };
-
-            int y = 0;
-            int fullWidth = 900; // Sidebar sonrası kullanılabilir alan
+            mainPanel = new PanelControl
+            {
+                Dock = DockStyle.Fill,
+                BorderStyle = BorderStyles.NoBorder,
+                BackColor = Color.White
+            };
+            mainPanel.Appearance.BackColor = Color.White;
+            mainPanel.Appearance.Options.UseBackColor = true;
+            this.Controls.Add(mainPanel);
 
             // Header
-            var headerPanel = CreateHeader();
-            headerPanel.Size = new Size(fullWidth, 45);
-            headerPanel.Location = new Point(0, y);
-            contentPanel.Controls.Add(headerPanel);
-            y += 50;
+            CreateHeader();
 
-            // Summary Cards - 4 kart yan yana
-            var summaryRow = CreateSummaryCards();
-            summaryRow.Size = new Size(fullWidth, 60);
-            summaryRow.Location = new Point(0, y);
-            contentPanel.Controls.Add(summaryRow);
-            y += 70;
+            // Summary Cards Row
+            CreateSummaryCards();
 
-            // Main Content Row - sol ve sağ paneller
-            var mainRow = CreateMainContentRow();
-            mainRow.Size = new Size(fullWidth, 280);
-            mainRow.Location = new Point(0, y);
-            contentPanel.Controls.Add(mainRow);
-            y += 290;
+            // Main Content - 2 Columns
+            CreateMainContent();
 
-            // Bottom Row - 3 kart
-            var bottomRow = CreateBottomRow();
-            bottomRow.Size = new Size(fullWidth, 260);
-            bottomRow.Location = new Point(0, y);
-            contentPanel.Controls.Add(bottomRow);
-            y += 270;
-
-            contentPanel.Size = new Size(fullWidth + 20, y);
-            mainContainer.Controls.Add(contentPanel);
-            this.Controls.Add(mainContainer);
+            // Bottom Row - 3 Cards
+            CreateBottomRow();
         }
 
-        #region Header
-        private Panel CreateHeader()
+        private void CreateHeader()
         {
-            var panel = new Panel { Size = new Size(1220, 50), BackColor = Color.Transparent };
-
-            var lblTitle = new Label
+            var headerPanel = new PanelControl
             {
-                Text = "🤖 AI Analiz Paneli",
+                Location = new Point(0, 0),
+                Size = new Size(1400, 60),
+                Dock = DockStyle.Top,
+                BorderStyle = BorderStyles.NoBorder,
+                BackColor = Primary
+            };
+
+            var lblTitle = new LabelControl
+            {
+                Text = "AI Analiz Paneli",
                 Font = new Font("Segoe UI", 16F, FontStyle.Bold),
-                ForeColor = TextDark,
-                Location = new Point(0, 8),
-                AutoSize = true
+                ForeColor = Color.White,
+                Location = new Point(20, 15)
             };
-            panel.Controls.Add(lblTitle);
+            headerPanel.Controls.Add(lblTitle);
 
-            // Search box
-            var searchBox = new TextEdit
+            // Hasta Secimi Label
+            var lblPatient = new LabelControl
             {
-                Location = new Point(600, 10),
-                Size = new Size(250, 28),
-                Properties = { NullValuePrompt = "🔍 Hasta veya diyet ara..." }
+                Text = "Hasta:",
+                Font = new Font("Segoe UI", 10F),
+                ForeColor = Color.White,
+                Location = new Point(500, 18)
             };
-            panel.Controls.Add(searchBox);
+            headerPanel.Controls.Add(lblPatient);
 
-            // Patient selector
-            cmbPatient = new ComboBoxEdit { Location = new Point(880, 10), Size = new Size(200, 28) };
-            cmbPatient.SelectedIndexChanged += CmbPatient_SelectedIndexChanged;
-            panel.Controls.Add(cmbPatient);
-
-            // Date
-            var lblDate = new Label
+            // Hasta ComboBox
+            cmbPatient = new ComboBoxEdit
             {
-                Text = $"📅 {DateTime.Now:dddd, dd MMMM yyyy}",
+                Location = new Point(550, 15),
+                Size = new Size(200, 28)
+            };
+            cmbPatient.Properties.TextEditStyle = TextEditStyles.DisableTextEditor;
+            cmbPatient.SelectedIndexChanged += CmbPatient_Changed;
+            headerPanel.Controls.Add(cmbPatient);
+
+            // AI Oneri Al Butonu - BELIRGIN
+            btnGetAIRecommendations = new SimpleButton
+            {
+                Text = "Onerilerini Al",
+                Location = new Point(770, 12),
+                Size = new Size(120, 36),
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold)
+            };
+            btnGetAIRecommendations.Appearance.BackColor = Color.White;
+            btnGetAIRecommendations.Appearance.ForeColor = Primary;
+            btnGetAIRecommendations.Appearance.Options.UseBackColor = true;
+            btnGetAIRecommendations.Appearance.Options.UseForeColor = true;
+            btnGetAIRecommendations.Click += async (s, e) => await GetAIRecommendationsAsync();
+            headerPanel.Controls.Add(btnGetAIRecommendations);
+
+            mainPanel.Controls.Add(headerPanel);
+        }
+
+        private void CreateSummaryCards()
+        {
+            var statsPanel = new PanelControl
+            {
+                Location = new Point(20, 75),
+                Size = new Size(mainPanel.Width - 40, 80),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+                BorderStyle = BorderStyles.NoBorder,
+                BackColor = Color.White
+            };
+
+            int cardWidth = 220;
+            int gap = 20;
+            int x = 0;
+
+            // Genel Durum
+            lblStatus = new LabelControl { Text = "Saglikli", Font = new Font("Segoe UI", 12, FontStyle.Bold), ForeColor = Success };
+            CreateSummaryCard(statsPanel, x, 0, cardWidth, 70, "Genel Durum", lblStatus, Success);
+            x += cardWidth + gap;
+
+            // Boy-Kilo
+            lblHeightWeight = new LabelControl { Text = "170 cm / 70 kg", Font = new Font("Segoe UI", 12, FontStyle.Bold), ForeColor = TextDark };
+            CreateSummaryCard(statsPanel, x, 0, cardWidth, 70, "Boy - Kilo", lblHeightWeight, Info);
+            x += cardWidth + gap;
+
+            // Gunluk Kalori
+            lblCalorie = new LabelControl { Text = "2000 kcal", Font = new Font("Segoe UI", 12, FontStyle.Bold), ForeColor = Warning };
+            CreateSummaryCard(statsPanel, x, 0, cardWidth, 70, "Gunluk Kalori", lblCalorie, Warning);
+            x += cardWidth + gap;
+
+            // BMI
+            lblBMI = new LabelControl { Text = "24.2 Normal", Font = new Font("Segoe UI", 12, FontStyle.Bold), ForeColor = Success };
+            CreateSummaryCard(statsPanel, x, 0, cardWidth, 70, "BMI", lblBMI, Primary);
+
+            mainPanel.Controls.Add(statsPanel);
+        }
+
+        private void CreateSummaryCard(PanelControl parent, int x, int y, int width, int height, string title, LabelControl valueLabel, Color accentColor)
+        {
+            var card = new PanelControl
+            {
+                Location = new Point(x, y),
+                Size = new Size(width, height),
+                BorderStyle = BorderStyles.Simple,
+                BackColor = Color.White
+            };
+            card.Appearance.BackColor = Color.White;
+            card.Appearance.Options.UseBackColor = true;
+
+            // Sol renk cizgisi
+            var colorBar = new PanelControl
+            {
+                Location = new Point(0, 0),
+                Size = new Size(5, height),
+                BorderStyle = BorderStyles.NoBorder,
+                BackColor = accentColor
+            };
+            card.Controls.Add(colorBar);
+
+            var lblTitle = new LabelControl
+            {
+                Text = title,
                 Font = new Font("Segoe UI", 9F),
-                ForeColor = TextMedium,
-                Location = new Point(1100, 15),
-                AutoSize = true
+                ForeColor = TextGray,
+                Location = new Point(15, 10)
             };
-            panel.Controls.Add(lblDate);
-
-            return panel;
-        }
-        #endregion
-
-        #region Summary Cards
-        private Panel CreateSummaryCards()
-        {
-            var row = new Panel { Size = new Size(1220, 65), BackColor = Color.Transparent };
-
-            // Card 1 - Genel Durum
-            var card1 = CreateSummaryCard("✓", "Genel Durum", "Sağlıklı", SuccessGreen, 0);
-            row.Controls.Add(card1);
-
-            // Card 2 - Boy-Kilo
-            var card2 = CreateSummaryCard("📏", "Boy-Kilo", "178 cm / 84 kg", TextDark, 200);
-            lblHeightWeight = (Label)card2.Controls[2];
-            row.Controls.Add(card2);
-
-            // Card 3 - Günlük Kalori
-            var card3 = CreateSummaryCard("🔥", "Günlük Kalori", "2000 kcal", SuccessGreen, 400);
-            lblDailyCalorie = (Label)card3.Controls[2];
-            row.Controls.Add(card3);
-
-            // Card 4 - BMI
-            var card4 = CreateSummaryCard("⚖️", "BMI", "26.5 Fazla Kilolu", WarningOrange, 600);
-            lblBMI = (Label)card4.Controls[2];
-            row.Controls.Add(card4);
-
-            return row;
-        }
-
-        private Panel CreateSummaryCard(string icon, string title, string value, Color valueColor, int x)
-        {
-            var card = new Panel { Location = new Point(x, 0), Size = new Size(185, 58), BackColor = CardWhite };
-            card.Paint += (s, e) => DrawRoundedBorder(e.Graphics, card, 10);
-
-            var lblIcon = new Label { Text = icon, Font = new Font("Segoe UI", 14F), Location = new Point(10, 15), AutoSize = true };
-            var lblTitle = new Label { Text = title, Font = new Font("Segoe UI", 8F), ForeColor = TextMedium, Location = new Point(45, 8), AutoSize = true };
-            var lblValue = new Label { Text = value, Font = new Font("Segoe UI", 10F, FontStyle.Bold), ForeColor = valueColor, Location = new Point(45, 28), AutoSize = true };
-            
-            card.Controls.Add(lblIcon);
             card.Controls.Add(lblTitle);
-            card.Controls.Add(lblValue);
-            
-            return card;
-        }
-        #endregion
 
-        #region Main Content Row
-        private Panel CreateMainContentRow()
-        {
-            var row = new Panel { Size = new Size(900, 280), BackColor = Color.Transparent };
+            valueLabel.Location = new Point(15, 35);
+            card.Controls.Add(valueLabel);
 
-            // Left side - Analysis + Charts (580px)
-            var leftPanel = CreateAnalysisPanel();
-            leftPanel.Location = new Point(0, 0);
-            row.Controls.Add(leftPanel);
-
-            // Right side - AI Recommendations (300px)
-            var rightPanel = CreateRecommendationsPanel();
-            rightPanel.Location = new Point(600, 0);
-            row.Controls.Add(rightPanel);
-
-            return row;
+            parent.Controls.Add(card);
         }
 
-        private Panel CreateAnalysisPanel()
+        private void CreateMainContent()
         {
-            var panel = new Panel { Size = new Size(580, 270), BackColor = CardWhite };
-            panel.Paint += (s, e) => DrawRoundedBorder(e.Graphics, panel, 10);
-
-            // Header with patient name
-            var lblHeader = new Label
+            // Sol Panel - Analiz + Grafikler
+            var leftPanel = new PanelControl
             {
-                Text = "👤 Ahmet Yılmaz'ın Analiz Sonuçları",
+                Location = new Point(20, 170),
+                Size = new Size(680, 280),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left,
+                BorderStyle = BorderStyles.NoBorder,
+                BackColor = Color.White
+            };
+            leftPanel.Appearance.BackColor = Color.White;
+            leftPanel.Appearance.BorderColor = Color.White;
+            leftPanel.Appearance.Options.UseBackColor = true;
+            leftPanel.Appearance.Options.UseBorderColor = true;
+
+            // Header
+            var leftHeader = new PanelControl
+            {
+                Location = new Point(0, 0),
+                Size = new Size(leftPanel.Width, 45),
+                Dock = DockStyle.Top,
+                BorderStyle = BorderStyles.NoBorder,
+                BackColor = Primary
+            };
+            var lblLeftTitle = new LabelControl
+            {
+                Text = "Hasta Analiz Sonuclari",
                 Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                ForeColor = Color.White,
+                Location = new Point(15, 12)
+            };
+            leftHeader.Controls.Add(lblLeftTitle);
+            leftPanel.Controls.Add(leftHeader);
+
+            // Analiz Metni
+            lblAnalysisText = new LabelControl
+            {
+                Text = "Hasta secildiginde analiz sonuclari burada gorunecek...",
+                Font = new Font("Segoe UI", 10F),
+                ForeColor = TextGray,
+                Location = new Point(15, 55),
+                AutoSizeMode = LabelAutoSizeMode.None,
+                Size = new Size(leftPanel.Width - 30, 40)
+            };
+            leftPanel.Controls.Add(lblAnalysisText);
+
+            // Kilo Degisimi Grafigi
+            var lblWeightTitle = new LabelControl
+            {
+                Text = "Kilo Degisimi",
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
                 ForeColor = TextDark,
-                Location = new Point(15, 12),
-                AutoSize = true
+                Location = new Point(15, 100)
             };
-            panel.Controls.Add(lblHeader);
+            leftPanel.Controls.Add(lblWeightTitle);
 
-            // Period buttons
-            var periods = new[] { "Haftalık", "Aylık", "Yıllık" };
-            for (int i = 0; i < periods.Length; i++)
+            pnlWeightChart = new PanelControl
             {
-                var btn = new SimpleButton
-                {
-                    Text = periods[i],
-                    Location = new Point(450 + i * 75, 10),
-                    Size = new Size(70, 26),
-                    Font = new Font("Segoe UI", 8F),
-                    Appearance = { BackColor = i == 0 ? PrimaryGreen : CardWhite, ForeColor = i == 0 ? CardWhite : TextDark, BorderColor = BorderGray }
-                };
-                panel.Controls.Add(btn);
-            }
-
-            // AI Analysis text
-            lblAnalysisText = new Label
-            {
-                Text = "🤖 Ahmet Bey sağlıklı durumda ancak BMI değeri 26.5 ile fazla kilolu kategorisindedir. Haftalık ortalama kilo kaybı: sağlıklı sınırlar içinde. Mevcut kilo gidişatı iyi görükuyor. Kilo koruma için beslenme düzeni önerilecektir.",
-                Font = new Font("Segoe UI", 9F),
-                ForeColor = TextMedium,
-                Location = new Point(15, 45),
-                Size = new Size(740, 40)
+                Location = new Point(15, 125),
+                Size = new Size(300, 140),
+                BorderStyle = BorderStyles.Simple,
+                BackColor = Color.White
             };
-            panel.Controls.Add(lblAnalysisText);
+            pnlWeightChart.Paint += PaintWeightChart;
+            leftPanel.Controls.Add(pnlWeightChart);
 
-            // Weight Chart
-            var lblWeightTitle = new Label { Text = "Son Kilo Değişimi", Font = new Font("Segoe UI", 10F, FontStyle.Bold), ForeColor = TextDark, Location = new Point(15, 95), AutoSize = true };
-            panel.Controls.Add(lblWeightTitle);
+            // Kalori Dagilimi
+            var lblCalorieTitle = new LabelControl
+            {
+                Text = "Kalori Dagilimi",
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                ForeColor = TextDark,
+                Location = new Point(340, 100)
+            };
+            leftPanel.Controls.Add(lblCalorieTitle);
 
-            pnlWeightChart = new Panel { Location = new Point(15, 120), Size = new Size(360, 230), BackColor = Color.FromArgb(250, 252, 254) };
-            pnlWeightChart.Paint += PnlWeightChart_Paint;
-            panel.Controls.Add(pnlWeightChart);
+            pnlCaloriePie = new PanelControl
+            {
+                Location = new Point(340, 125),
+                Size = new Size(320, 140),
+                BorderStyle = BorderStyles.Simple,
+                BackColor = Color.White
+            };
+            pnlCaloriePie.Paint += PaintCaloriePie;
+            leftPanel.Controls.Add(pnlCaloriePie);
 
-            // Calorie Pie Chart
-            var lblCalorieTitle = new Label { Text = "🥧 Kalori Dağılımı", Font = new Font("Segoe UI", 10F, FontStyle.Bold), ForeColor = TextDark, Location = new Point(400, 95), AutoSize = true };
-            panel.Controls.Add(lblCalorieTitle);
+            mainPanel.Controls.Add(leftPanel);
 
-            pnlCaloriePie = new Panel { Location = new Point(400, 120), Size = new Size(360, 230), BackColor = Color.FromArgb(250, 252, 254) };
-            pnlCaloriePie.Paint += PnlCaloriePie_Paint;
-            panel.Controls.Add(pnlCaloriePie);
+            // Sag Panel - Saglik Onerileri (AI)
+            var rightPanel = new PanelControl
+            {
+                Location = new Point(715, 170),
+                Size = new Size(mainPanel.Width - 735, 280),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+                BorderStyle = BorderStyles.Simple,
+                BackColor = Color.White
+            };
+            rightPanel.Appearance.BackColor = Color.White;
+            rightPanel.Appearance.Options.UseBackColor = true;
 
-            return panel;
+            // Header
+            var rightHeader = new PanelControl
+            {
+                Location = new Point(0, 0),
+                Size = new Size(rightPanel.Width, 45),
+                Dock = DockStyle.Top,
+                BorderStyle = BorderStyles.NoBorder,
+                BackColor = Success
+            };
+            var lblRightTitle = new LabelControl
+            {
+                Text = "AI Saglik Onerileri",
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                ForeColor = Color.White,
+                Location = new Point(15, 12)
+            };
+            rightHeader.Controls.Add(lblRightTitle);
+            rightPanel.Controls.Add(rightHeader);
+
+            txtHealthRecommendations = new MemoEdit
+            {
+                Location = new Point(10, 55),
+                Size = new Size(rightPanel.Width - 20, 210),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom
+            };
+            txtHealthRecommendations.Properties.ReadOnly = true;
+            txtHealthRecommendations.Properties.NullValuePrompt = "AI saglik onerilerini almak icin 'AI Onerilerini Al' butonuna tiklayin...";
+            txtHealthRecommendations.Font = new Font("Segoe UI", 10F);
+            txtHealthRecommendations.BackColor = Color.White;
+            txtHealthRecommendations.Properties.Appearance.BackColor = Color.White;
+            rightPanel.Controls.Add(txtHealthRecommendations);
+
+            mainPanel.Controls.Add(rightPanel);
         }
 
-        private void PnlWeightChart_Paint(object sender, PaintEventArgs e)
+        private void CreateBottomRow()
         {
-            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            
+            int bottomY = 465;
+            int cardWidth = 370;
+            int cardHeight = mainPanel.Height - bottomY - 30;
+
+            // Ogun Onerileri (AI)
+            var mealPanel = new PanelControl
+            {
+                Location = new Point(20, bottomY),
+                Size = new Size(cardWidth, cardHeight),
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left,
+                BorderStyle = BorderStyles.Simple,
+                BackColor = Color.White
+            };
+            mealPanel.Appearance.BackColor = Color.White;
+            mealPanel.Appearance.Options.UseBackColor = true;
+
+            var mealHeader = new PanelControl
+            {
+                Location = new Point(0, 0),
+                Size = new Size(mealPanel.Width, 40),
+                Dock = DockStyle.Top,
+                BorderStyle = BorderStyles.NoBorder,
+                BackColor = Warning
+            };
+            var lblMealTitle = new LabelControl
+            {
+                Text = "AI Ogun Onerileri",
+                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+                ForeColor = Color.White,
+                Location = new Point(12, 10)
+            };
+            mealHeader.Controls.Add(lblMealTitle);
+            mealPanel.Controls.Add(mealHeader);
+
+            txtMealRecommendations = new MemoEdit
+            {
+                Location = new Point(8, 48),
+                Size = new Size(mealPanel.Width - 16, cardHeight - 58),
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
+            };
+            txtMealRecommendations.Properties.ReadOnly = true;
+            txtMealRecommendations.Properties.NullValuePrompt = "AI ogun onerilerini almak icin 'AI Onerilerini Al' butonuna tiklayin...";
+            txtMealRecommendations.Font = new Font("Segoe UI", 9.5F);
+            txtMealRecommendations.BackColor = Color.White;
+            txtMealRecommendations.Properties.Appearance.BackColor = Color.White;
+            mealPanel.Controls.Add(txtMealRecommendations);
+
+            mainPanel.Controls.Add(mealPanel);
+
+            // Besin Dengesi
+            var nutritionPanel = new PanelControl
+            {
+                Location = new Point(405, bottomY),
+                Size = new Size(cardWidth, cardHeight),
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left,
+                BorderStyle = BorderStyles.Simple,
+                BackColor = Color.White
+            };
+            nutritionPanel.Appearance.BackColor = Color.White;
+            nutritionPanel.Appearance.Options.UseBackColor = true;
+
+            var nutritionHeader = new PanelControl
+            {
+                Location = new Point(0, 0),
+                Size = new Size(nutritionPanel.Width, 40),
+                Dock = DockStyle.Top,
+                BorderStyle = BorderStyles.NoBorder,
+                BackColor = Info
+            };
+            var lblNutritionTitle = new LabelControl
+            {
+                Text = "Besin Dengesi (Haftalik)",
+                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+                ForeColor = Color.White,
+                Location = new Point(12, 10)
+            };
+            nutritionHeader.Controls.Add(lblNutritionTitle);
+            nutritionPanel.Controls.Add(nutritionHeader);
+
+            pnlNutritionBars = new PanelControl
+            {
+                Location = new Point(8, 48),
+                Size = new Size(nutritionPanel.Width - 16, cardHeight - 58),
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
+                BorderStyle = BorderStyles.NoBorder,
+                BackColor = Color.White
+            };
+            pnlNutritionBars.Paint += PaintNutritionBars;
+            nutritionPanel.Controls.Add(pnlNutritionBars);
+
+            mainPanel.Controls.Add(nutritionPanel);
+
+            // AI Asistan Chat
+            var chatPanel = new PanelControl
+            {
+                Location = new Point(790, bottomY),
+                Size = new Size(mainPanel.Width - 810, cardHeight),
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
+                BorderStyle = BorderStyles.Simple,
+                BackColor = Color.White
+            };
+            chatPanel.Appearance.BackColor = Color.White;
+            chatPanel.Appearance.Options.UseBackColor = true;
+
+            var chatHeader = new PanelControl
+            {
+                Location = new Point(0, 0),
+                Size = new Size(chatPanel.Width, 40),
+                Dock = DockStyle.Top,
+                BorderStyle = BorderStyles.NoBorder,
+                BackColor = Purple
+            };
+            var lblChatTitle = new LabelControl
+            {
+                Text = "AI Asistan",
+                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+                ForeColor = Color.White,
+                Location = new Point(12, 10)
+            };
+            chatHeader.Controls.Add(lblChatTitle);
+            chatPanel.Controls.Add(chatHeader);
+
+            pnlChatHistory = new PanelControl
+            {
+                Location = new Point(8, 48),
+                Size = new Size(chatPanel.Width - 16, cardHeight - 100),
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
+                BorderStyle = BorderStyles.Simple,
+                BackColor = Color.White,
+                AutoScroll = true
+            };
+            pnlChatHistory.Appearance.BackColor = Color.White;
+            pnlChatHistory.Appearance.Options.UseBackColor = true;
+            chatPanel.Controls.Add(pnlChatHistory);
+
+            txtChat = new MemoEdit
+            {
+                Location = new Point(8, cardHeight - 45),
+                Size = new Size(chatPanel.Width - 80, 38),
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
+            };
+            txtChat.Properties.NullValuePrompt = "Soru sorun...";
+            txtChat.BackColor = Color.White;
+            txtChat.Properties.Appearance.BackColor = Color.White;
+            chatPanel.Controls.Add(txtChat);
+
+            var btnSend = new SimpleButton
+            {
+                Text = "Sor",
+                Location = new Point(chatPanel.Width - 65, cardHeight - 45),
+                Size = new Size(55, 38),
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Right
+            };
+            btnSend.Appearance.BackColor = Purple;
+            btnSend.Appearance.ForeColor = Color.White;
+            btnSend.Appearance.Options.UseBackColor = true;
+            btnSend.Appearance.Options.UseForeColor = true;
+            btnSend.Click += async (s, e) => await SendChatMessageAsync();
+            chatPanel.Controls.Add(btnSend);
+
+            AddChatMessage("Merhaba! Hasta hakkinda sorularinizi sorabilirsiniz.", false);
+
+            mainPanel.Controls.Add(chatPanel);
+        }
+
+        #region Chart Painting
+        private void PaintWeightChart(object sender, PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
             if (_weightData == null || _weightData.Length == 0)
             {
-                _weightData = new[] { 88.0, 87.5, 86.8, 86.0, 85.5, 85.0, 84.5, 84.0 }; // Default data
+                g.DrawString("Veri yok", new Font("Segoe UI", 10), new SolidBrush(TextGray), 100, 60);
+                return;
             }
 
-            double max = _weightData.Max() + 1;
-            double min = _weightData.Min() - 1;
+            int w = pnlWeightChart.Width - 60;
+            int h = pnlWeightChart.Height - 40;
+            double max = _weightData.Max() + 2;
+            double min = _weightData.Min() - 2;
             double range = max - min;
             if (range == 0) range = 1;
 
-            int w = pnlWeightChart.Width - 50;
-            int h = pnlWeightChart.Height - 50;
-
-            // Draw grid lines and labels
-            using (var gridPen = new Pen(BorderGray, 1))
-            using (var font = new Font("Segoe UI", 7F))
-            using (var brush = new SolidBrush(TextMedium))
+            // Grid lines
+            using (var pen = new Pen(Border, 1))
+            using (var font = new Font("Segoe UI", 7))
+            using (var brush = new SolidBrush(TextGray))
             {
                 for (int i = 0; i <= 4; i++)
                 {
-                    int y = 20 + (int)(i * h / 4.0);
-                    e.Graphics.DrawLine(gridPen, 40, y, w + 40, y);
+                    int y = 15 + (i * h / 4);
+                    g.DrawLine(pen, 45, y, w + 45, y);
                     double val = max - (i * range / 4);
-                    e.Graphics.DrawString($"{val:F0} kg", font, brush, 0, y - 6);
+                    g.DrawString($"{val:F0} kg", font, brush, 5, y - 6);
                 }
             }
 
-            // Draw line chart
+            // Line chart
             if (_weightData.Length > 1)
             {
                 var points = new List<PointF>();
                 for (int i = 0; i < _weightData.Length; i++)
                 {
-                    float x = 40 + (float)(i * w / (_weightData.Length - 1));
-                    float y = 20 + (float)((max - _weightData[i]) / range * h);
+                    float x = 45 + (float)(i * w / (_weightData.Length - 1));
+                    float y = 15 + (float)((max - _weightData[i]) / range * h);
                     points.Add(new PointF(x, y));
                 }
 
-                using (var linePen = new Pen(PrimaryGreen, 2))
-                    e.Graphics.DrawLines(linePen, points.ToArray());
+                using (var pen = new Pen(Primary, 2.5f))
+                    g.DrawLines(pen, points.ToArray());
 
-                // Draw points
                 foreach (var pt in points)
                 {
-                    using (var brush = new SolidBrush(PrimaryGreen))
-                        e.Graphics.FillEllipse(brush, pt.X - 4, pt.Y - 4, 8, 8);
-                }
-            }
-
-            // X-axis labels
-            string[] weeks = { "4 Hafta Önce", "3 Hafta Önce", "2 Hafta Önce", "1 Hafta Önce", "Bu Hafta" };
-            using (var font = new Font("Segoe UI", 7F))
-            using (var brush = new SolidBrush(TextMedium))
-            {
-                for (int i = 0; i < Math.Min(weeks.Length, _weightData.Length); i++)
-                {
-                    float x = 40 + (float)(i * w / Math.Max(1, _weightData.Length - 1));
-                    e.Graphics.DrawString(weeks[i], font, brush, x - 20, h + 25);
+                    g.FillEllipse(new SolidBrush(Primary), pt.X - 5, pt.Y - 5, 10, 10);
+                    g.FillEllipse(new SolidBrush(Color.White), pt.X - 3, pt.Y - 3, 6, 6);
                 }
             }
         }
 
-        private void PnlCaloriePie_Paint(object sender, PaintEventArgs e)
+        private void PaintCaloriePie(object sender, PaintEventArgs e)
         {
-            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            var g = e.Graphics;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-            // Protein 21%, Karbohidrat 50%, Yağ 35%
-            int[] percentages = { 21, 50, 35 };
-            Color[] colors = { SuccessGreen, InfoBlue, WarningOrange };
-            string[] labels = { "Protein", "Karbonhidrat", "Yağ" };
-            string[] values = { "105g", "250g", "64g" };
+            int[] values = _macroData;
+            Color[] colors = { Success, Info, Warning };
+            string[] labels = { "Protein", "Karbonhidrat", "Yag" };
 
-            int centerX = 100, centerY = 100, radius = 80;
-            float startAngle = 0;
+            int cx = 60, cy = 70, r = 45;
+            float startAngle = -90;
 
-            // Draw pie slices
-            for (int i = 0; i < percentages.Length; i++)
+            for (int i = 0; i < values.Length; i++)
             {
-                float sweepAngle = percentages[i] * 360f / 100f;
-                using (var brush = new SolidBrush(colors[i]))
-                    e.Graphics.FillPie(brush, centerX - radius, centerY - radius, radius * 2, radius * 2, startAngle, sweepAngle);
-                startAngle += sweepAngle;
+                float sweep = values[i] * 3.6f;
+                g.FillPie(new SolidBrush(colors[i]), cx - r, cy - r, r * 2, r * 2, startAngle, sweep);
+                startAngle += sweep;
             }
 
-            // Draw center circle (donut effect)
-            using (var brush = new SolidBrush(Color.FromArgb(250, 252, 254)))
-                e.Graphics.FillEllipse(brush, centerX - 40, centerY - 40, 80, 80);
+            g.FillEllipse(new SolidBrush(Color.White), cx - 25, cy - 25, 50, 50);
 
-            // Draw legend
-            using (var font = new Font("Segoe UI", 9F))
-            using (var boldFont = new Font("Segoe UI", 9F, FontStyle.Bold))
+            using (var font = new Font("Segoe UI", 9))
+            using (var boldFont = new Font("Segoe UI", 10, FontStyle.Bold))
             {
                 for (int i = 0; i < labels.Length; i++)
                 {
-                    int legendY = 40 + i * 50;
-                    using (var brush = new SolidBrush(colors[i]))
-                        e.Graphics.FillEllipse(brush, 220, legendY, 12, 12);
-                    using (var brush = new SolidBrush(TextDark))
-                        e.Graphics.DrawString(labels[i], font, brush, 240, legendY - 2);
-                    using (var brush = new SolidBrush(colors[i]))
-                        e.Graphics.DrawString($"{percentages[i]}%", boldFont, brush, 240, legendY + 15);
-                    using (var brush = new SolidBrush(TextMedium))
-                        e.Graphics.DrawString(values[i], font, brush, 280, legendY + 15);
+                    int y = 15 + i * 40;
+                    g.FillRectangle(new SolidBrush(colors[i]), 140, y, 14, 14);
+                    g.DrawString(labels[i], font, new SolidBrush(TextDark), 160, y - 2);
+                    g.DrawString($"{values[i]}%", boldFont, new SolidBrush(colors[i]), 250, y - 2);
                 }
             }
         }
 
-        private Panel CreateRecommendationsPanel()
+        private void PaintNutritionBars(object sender, PaintEventArgs e)
         {
-            var panel = new Panel { Size = new Size(290, 270), BackColor = CardWhite };
-            panel.Paint += (s, e) => DrawRoundedBorder(e.Graphics, panel, 10);
+            var g = e.Graphics;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-            var lblTitle = new Label
+            string[] labels = { "Protein", "Karbonhidrat", "Yag", "Lif", "Kalsiyum" };
+            Color[] colors = { Success, Info, Warning, Success, Info };
+
+            int y = 10;
+            int barWidth = pnlNutritionBars.Width - 120;
+
+            using (var font = new Font("Segoe UI", 9))
+            using (var boldFont = new Font("Segoe UI", 9, FontStyle.Bold))
             {
-                Text = "✨ Sağlık ve Diyet Önerileri",
-                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
-                ForeColor = TextDark,
-                Location = new Point(15, 12),
-                AutoSize = true
-            };
-            panel.Controls.Add(lblTitle);
-
-            // Recommendations
-            int y = 50;
-            
-            lblAiRecommendation1 = CreateRecommendationItem(panel, "✓", "Mevcut kilonuzu korumak için haftalık en fazla 0.6 - 1 kg vermeye devam edin 🎯", SuccessGreen, y);
-            y += 80;
-            
-            lblAiRecommendation2 = CreateRecommendationItem(panel, "⚠️", "Haftalık en az 150 dakika (yaklaşık 30 dk/gün) orta düzeyde egzersiz yapmanız önerilir 🏃", WarningOrange, y);
-            y += 80;
-            
-            lblAiRecommendation3 = CreateRecommendationItem(panel, "💧", "Günlük su tüketiminizi en az 8 bardek (yaklaşık 2 litre) olarak tutmaya özen gösterin 💙", InfoBlue, y);
-
-            return panel;
-        }
-
-        private Label CreateRecommendationItem(Panel panel, string icon, string text, Color iconColor, int y)
-        {
-            var lblIcon = new Label
-            {
-                Text = icon,
-                Font = new Font("Segoe UI", 14F),
-                ForeColor = iconColor,
-                Location = new Point(15, y),
-                AutoSize = true
-            };
-            panel.Controls.Add(lblIcon);
-
-            var lblText = new Label
-            {
-                Text = text,
-                Font = new Font("Segoe UI", 9F),
-                ForeColor = TextDark,
-                Location = new Point(50, y),
-                Size = new Size(350, 60)
-            };
-            panel.Controls.Add(lblText);
-            
-            return lblText;
+                for (int i = 0; i < labels.Length; i++)
+                {
+                    g.DrawString(labels[i], font, new SolidBrush(TextDark), 5, y + 2);
+                    
+                    // Background bar
+                    g.FillRectangle(new SolidBrush(Border), 85, y, barWidth, 18);
+                    
+                    // Value bar
+                    int fillWidth = (int)(barWidth * _nutritionData[i] / 100.0);
+                    g.FillRectangle(new SolidBrush(colors[i]), 85, y, fillWidth, 18);
+                    
+                    g.DrawString($"{_nutritionData[i]}%", boldFont, new SolidBrush(colors[i]), barWidth + 95, y + 1);
+                    
+                    y += 32;
+                }
+            }
         }
         #endregion
 
-        #region Bottom Row
-        private Panel CreateBottomRow()
-        {
-            var row = new Panel { Size = new Size(900, 260), BackColor = Color.Transparent };
-
-            // Haftalık Örnek Öğünler
-            var mealsCard = CreateMealsCard();
-            mealsCard.Location = new Point(0, 0);
-            row.Controls.Add(mealsCard);
-
-            // Makro ve Mikro Besin Dengesi
-            var nutritionCard = CreateNutritionCard();
-            nutritionCard.Location = new Point(305, 0);
-            row.Controls.Add(nutritionCard);
-
-            // AI Sohbet
-            var chatCard = CreateChatCard();
-            chatCard.Location = new Point(610, 0);
-            row.Controls.Add(chatCard);
-
-            return row;
-        }
-
-        private Panel CreateMealsCard()
-        {
-            var panel = new Panel { Size = new Size(290, 250), BackColor = CardWhite };
-            panel.Paint += (s, e) => DrawRoundedBorder(e.Graphics, panel, 10);
-
-            var lblTitle = new Label
-            {
-                Text = "🍽️ Haftalık Örnek Öğünler",
-                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
-                ForeColor = TextDark,
-                Location = new Point(15, 12),
-                AutoSize = true
-            };
-            panel.Controls.Add(lblTitle);
-
-            // Meals
-            int y = 50;
-            CreateMealItem(panel, "🌅 Kahvaltı", "Yulaf Ezmesi (50g), Süt (200ml), Ceviz (10g), Elma (1 adet) - 450 kcal", y);
-            y += 80;
-            CreateMealItem(panel, "☀️ Öğle Yemeği", "Tavuk Izgara (150g), Bulgur Pilavı (100g), Salata (1 porsiyon), Yoğurt (1 kase) - 600 kcal", y);
-            y += 80;
-            CreateMealItem(panel, "🌙 Akşam Yemeği", "Fırın Sebzeli Balık (200g), Tam Tahıllı Ekmek (1 dilim), Zeytinyağlı Brokoli (150g) - 550 kcal", y);
-
-            return panel;
-        }
-
-        private void CreateMealItem(Panel panel, string title, string description, int y)
-        {
-            var lblTitle = new Label
-            {
-                Text = title,
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                ForeColor = TextDark,
-                Location = new Point(15, y),
-                AutoSize = true
-            };
-            panel.Controls.Add(lblTitle);
-
-            var lblDesc = new Label
-            {
-                Text = description,
-                Font = new Font("Segoe UI", 8.5F),
-                ForeColor = TextMedium,
-                Location = new Point(15, y + 22),
-                Size = new Size(355, 45)
-            };
-            panel.Controls.Add(lblDesc);
-        }
-
-        private Panel CreateNutritionCard()
-        {
-            var panel = new Panel { Size = new Size(290, 250), BackColor = CardWhite };
-            panel.Paint += (s, e) => DrawRoundedBorder(e.Graphics, panel, 10);
-
-            var lblTitle = new Label
-            {
-                Text = "📊 Makro ve Mikro Besin Dengesi",
-                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
-                ForeColor = TextDark,
-                Location = new Point(15, 12),
-                AutoSize = true
-            };
-            panel.Controls.Add(lblTitle);
-
-            // Nutrition bars
-            var nutrients = new[] {
-                ("Protein", SuccessGreen, 105, 120),
-                ("Karbonhidrat", InfoBlue, 250, 300),
-                ("Yağ", WarningOrange, 64, 80),
-                ("Fiber", SuccessGreen, 28, 35),
-                ("Sodyum", DangerRed, 2050, 2300),
-                ("Kalsiyum", InfoBlue, 850, 1000),
-                ("Vitamin C", SuccessGreen, 99, 100),
-                ("Demir", DangerRed, 16, 18)
-            };
-
-            int y = 45;
-            foreach (var (name, color, current, target) in nutrients)
-            {
-                CreateNutritionBar(panel, name, color, current, target, y);
-                y += 32;
-            }
-
-            return panel;
-        }
-
-        private void CreateNutritionBar(Panel panel, string name, Color color, int current, int target, int y)
-        {
-            var lblName = new Label
-            {
-                Text = name,
-                Font = new Font("Segoe UI", 8F),
-                ForeColor = TextDark,
-                Location = new Point(15, y),
-                Size = new Size(85, 16)
-            };
-            panel.Controls.Add(lblName);
-
-            var pnlBar = new Panel { Location = new Point(105, y), Size = new Size(180, 14), BackColor = Color.Transparent };
-            pnlBar.Paint += (s, e) =>
-            {
-                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                using (var bgBrush = new SolidBrush(BorderGray))
-                    e.Graphics.FillRectangle(bgBrush, 0, 2, 180, 10);
-                int fillWidth = Math.Min(180, (int)(180.0 * current / target));
-                using (var fillBrush = new SolidBrush(color))
-                    e.Graphics.FillRectangle(fillBrush, 0, 2, fillWidth, 10);
-            };
-            panel.Controls.Add(pnlBar);
-
-            var lblValue = new Label
-            {
-                Text = current >= 1000 ? $"{current} mg" : $"{current}g",
-                Font = new Font("Segoe UI", 7F),
-                ForeColor = TextMedium,
-                Location = new Point(290, y),
-                AutoSize = true
-            };
-            panel.Controls.Add(lblValue);
-
-            var lblIdeal = new Label
-            {
-                Text = "İdeal",
-                Font = new Font("Segoe UI", 7F),
-                ForeColor = current >= target * 0.9 ? SuccessGreen : WarningOrange,
-                Location = new Point(340, y),
-                AutoSize = true
-            };
-            panel.Controls.Add(lblIdeal);
-        }
-
-        private Panel CreateChatCard()
-        {
-            var panel = new Panel { Size = new Size(280, 250), BackColor = CardWhite };
-            panel.Paint += (s, e) => DrawRoundedBorder(e.Graphics, panel, 10);
-
-            var lblTitle = new Label
-            {
-                Text = "🧠 AI Sordu",
-                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
-                ForeColor = TextDark,
-                Location = new Point(15, 12),
-                AutoSize = true
-            };
-            panel.Controls.Add(lblTitle);
-
-            var lblSubtitle = new Label
-            {
-                Text = "AI Asistanı",
-                Font = new Font("Segoe UI", 9F),
-                ForeColor = TextMedium,
-                Location = new Point(15, 35),
-                AutoSize = true
-            };
-            panel.Controls.Add(lblSubtitle);
-
-            // Chat history panel
-            pnlChatHistory = new Panel
-            {
-                Location = new Point(15, 60),
-                Size = new Size(390, 170),
-                AutoScroll = true,
-                BackColor = Color.FromArgb(248, 250, 252)
-            };
-            panel.Controls.Add(pnlChatHistory);
-
-            // Default chat messages
-            AddChatMessage("Hastanız için sorun veya öneri isteyin...", true);
-            AddChatMessage("Hastanız için kanturomaun veya öneri için değeri 20.7'diyVermeye yanımla:süt ve yoğu..1 akza salızzğlarım sam alarsz yemeği gösterin...", false);
-            AddChatMessage("AI: AI statım. Bu üine göre, kohiczma için oüan tamsillik ikerepe izu öneri. Halfvu 1 bil açın", false);
-
-            // Input area
-            txtChatInput = new MemoEdit
-            {
-                Location = new Point(15, 235),
-                Size = new Size(310, 55),
-                Properties = { NullValuePrompt = "Hastanız için soru sorun veya öneri isteyin..." }
-            };
-            panel.Controls.Add(txtChatInput);
-
-            // Send button
-            btnSendChat = new SimpleButton
-            {
-                Text = "➤",
-                Location = new Point(330, 235),
-                Size = new Size(35, 55),
-                Font = new Font("Segoe UI", 14F),
-                Appearance = { BackColor = PrimaryGreen, ForeColor = CardWhite, BorderColor = PrimaryGreen }
-            };
-            btnSendChat.Click += BtnSendChat_Click;
-            panel.Controls.Add(btnSendChat);
-
-            // Bottom buttons
-            var btnSuggest = new SimpleButton
-            {
-                Text = "Öneri İste",
-                Location = new Point(260, 275),
-                Size = new Size(80, 28),
-                Font = new Font("Segoe UI", 8F),
-                Appearance = { BackColor = PrimaryGreen, ForeColor = CardWhite }
-            };
-            btnSuggest.Click += async (s, e) => await RequestAISuggestionAsync();
-            panel.Controls.Add(btnSuggest);
-
-            var btnClear = new SimpleButton
-            {
-                Text = "Konuşmayı Sil",
-                Location = new Point(345, 275),
-                Size = new Size(70, 28),
-                Font = new Font("Segoe UI", 8F),
-                Appearance = { BackColor = DangerRed, ForeColor = CardWhite }
-            };
-            btnClear.Click += (s, e) => ClearChat();
-            panel.Controls.Add(btnClear);
-
-            return panel;
-        }
-
-        private void AddChatMessage(string message, bool isUser)
-        {
-            var lblMsg = new Label
-            {
-                Text = message,
-                Font = new Font("Segoe UI", 8F),
-                ForeColor = isUser ? CardWhite : TextDark,
-                BackColor = isUser ? PrimaryGreen : Color.FromArgb(240, 240, 240),
-                Padding = new Padding(8),
-                AutoSize = false,
-                MaximumSize = new Size(280, 0),
-                Size = new Size(270, 45)
-            };
-            
-            int y = 5;
-            foreach (Control c in pnlChatHistory.Controls)
-            {
-                y = Math.Max(y, c.Bottom + 5);
-            }
-            
-            lblMsg.Location = new Point(isUser ? 110 : 5, y);
-            pnlChatHistory.Controls.Add(lblMsg);
-            pnlChatHistory.ScrollControlIntoView(lblMsg);
-        }
-
-        private void ClearChat()
-        {
-            pnlChatHistory.Controls.Clear();
-            AddChatMessage("Sohbet temizlendi. Yeni bir soru sorabilirsiniz.", false);
-        }
-        #endregion
-
-        #region Event Handlers & Data Loading
+        #region Data Loading
         private void LoadPatients()
         {
             try
@@ -741,216 +678,351 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
                 var patients = _patientService.GetPatientsByDoctor(AuthContext.UserId);
                 cmbPatient.Properties.Items.Clear();
                 foreach (var p in patients)
-                {
-                    cmbPatient.Properties.Items.Add(new PatientItem { Id = p.Id, Name = $"{p.AdSoyad} ({p.Yas}, {p.Cinsiyet})" });
-                }
+                    cmbPatient.Properties.Items.Add(new PatientItem { Id = p.Id, Name = p.AdSoyad });
                 if (cmbPatient.Properties.Items.Count > 0)
-                {
                     cmbPatient.SelectedIndex = 0;
-                }
             }
             catch { }
         }
 
-        private void CmbPatient_SelectedIndexChanged(object sender, EventArgs e)
+        private void CmbPatient_Changed(object sender, EventArgs e)
         {
-            var selected = cmbPatient.EditValue as PatientItem;
-            if (selected != null)
+            var item = cmbPatient.EditValue as PatientItem;
+            if (item != null)
             {
-                _selectedPatientId = selected.Id;
-                _selectedPatient = _patientService.GetPatientById(_selectedPatientId);
-                LoadPatientData();
-                LoadAIAnalysisAsync();
+                _patient = _patientService.GetPatientById(item.Id);
+                UpdatePatientData();
             }
         }
 
-        private void LoadPatientData()
+        private void UpdatePatientData()
         {
-            if (_selectedPatient == null) return;
+            if (_patient == null) return;
 
-            // Update summary cards
-            lblHeightWeight.Text = $"{_selectedPatient.Boy} cm / {_selectedPatient.GuncelKilo} kg";
+            // Summary cards
+            lblHeightWeight.Text = $"{_patient.Boy} cm / {_patient.GuncelKilo} kg";
             
-            // Calculate daily calories (BMR * activity factor)
-            double bmr = 10 * _selectedPatient.GuncelKilo + 6.25 * _selectedPatient.Boy - 5 * _selectedPatient.Yas + (_selectedPatient.Cinsiyet == "Erkek" ? 5 : -161);
-            lblDailyCalorie.Text = $"{(int)(bmr * 1.5)} kcal";
+            double bmr = 10 * _patient.GuncelKilo + 6.25 * _patient.Boy - 5 * _patient.Yas + (_patient.Cinsiyet == "Erkek" ? 5 : -161);
+            int tdee = (int)(bmr * 1.5);
+            lblCalorie.Text = $"{tdee} kcal";
 
-            // BMI
-            string bmiCategory = _selectedPatient.BMI < 18.5 ? "Zayıf" : _selectedPatient.BMI < 25 ? "Normal" : _selectedPatient.BMI < 30 ? "Fazla Kilolu" : "Obez";
-            lblBMI.Text = $"{_selectedPatient.BMI:F1} {bmiCategory}";
-            lblBMI.ForeColor = _selectedPatient.BMI >= 25 ? WarningOrange : SuccessGreen;
+            string category = _patient.BMI < 18.5 ? "Zayif" : _patient.BMI < 25 ? "Normal" : _patient.BMI < 30 ? "Fazla Kilolu" : "Obez";
+            lblBMI.Text = $"{_patient.BMI:F1} {category}";
+            lblBMI.ForeColor = _patient.BMI >= 25 ? Warning : (_patient.BMI < 18.5 ? Info : Success);
 
-            // Load weight chart data
-            var weightEntries = _weightRepo.GetByPatientId(_selectedPatientId, 30).OrderBy(w => w.Date).ToList();
-            if (weightEntries.Count > 0)
-            {
-                _weightData = weightEntries.Select(w => w.Weight).ToArray();
-            }
+            lblStatus.Text = _patient.BMI >= 18.5 && _patient.BMI < 25 ? "Saglikli" : "Dikkat";
+            lblStatus.ForeColor = _patient.BMI >= 18.5 && _patient.BMI < 25 ? Success : Warning;
+
+            lblAnalysisText.Text = $"{_patient.AdSoyad} icin analiz: BMI {_patient.BMI:F1} ({category}). Gunluk kalori ihtiyaci: {tdee} kcal. " +
+                                   $"Ideal kilo araligi: {(_patient.Boy - 100) * 0.9:F0} - {(_patient.Boy - 100) * 1.1:F0} kg.";
+
+            // Weight data
+            var entries = _weightRepo.GetByPatientId(_patient.Id, 30).OrderBy(w => w.Date).ToList();
+            if (entries.Count > 0)
+                _weightData = entries.Select(w => w.Weight).ToArray();
             else
-            {
-                _weightData = new[] { _selectedPatient.BaslangicKilosu, _selectedPatient.GuncelKilo };
-            }
+                _weightData = new[] { _patient.BaslangicKilosu, _patient.GuncelKilo };
+            
             pnlWeightChart?.Invalidate();
+
+            // Calculate macro distribution based on patient data
+            CalculateMacros();
+            pnlCaloriePie?.Invalidate();
+
+            // Calculate nutrition based on diet
+            CalculateNutrition();
+            pnlNutritionBars?.Invalidate();
+
+            // AI oneri alanlarini temizle - butonla doldurulacak
+            txtHealthRecommendations.Text = "";
+            txtMealRecommendations.Text = "";
         }
 
-        private async void LoadAIAnalysisAsync()
+        private void CalculateMacros()
         {
-            if (_selectedPatient == null || _aiService == null) return;
+            if (_patient == null) return;
 
-            try
+            // BMI'ye gore makro dagitimi
+            if (_patient.BMI > 25) // Kilolu - daha fazla protein
             {
-                lblAnalysisText.Text = "⏳ AI analizi yükleniyor...";
-
-                string context = $@"Hasta: {_selectedPatient.AdSoyad}
-Yaş: {_selectedPatient.Yas}, Cinsiyet: {_selectedPatient.Cinsiyet}
-Boy: {_selectedPatient.Boy} cm, Mevcut Kilo: {_selectedPatient.GuncelKilo} kg, Başlangıç Kilosu: {_selectedPatient.BaslangicKilosu} kg
-BMI: {_selectedPatient.BMI:F1}
-Kronik Hastalıklar: {_selectedPatient.MedicalHistory ?? "Yok"}";
-
-                string prompt = $@"Aşağıdaki hasta verilerini analiz et ve kısa bir değerlendirme yaz. Türkçe yanıt ver.
-
-HASTA VERİLERİ:
-{context}
-
-Yanıtını 2-3 cümle ile sınırla. Hastanın genel durumunu, BMI kategorisini ve kilo değişimini değerlendir.";
-
-                string response = await _aiService.GetAIResponseAsync(prompt);
-                lblAnalysisText.Text = "🤖 " + (response.Length > 300 ? response.Substring(0, 300) + "..." : response);
-
-                // Also get recommendations
-                await LoadAIRecommendationsAsync();
+                _macroData = new[] { 35, 40, 25 };
             }
-            catch (Exception ex)
+            else if (_patient.BMI < 18.5) // Zayif - daha fazla karb
             {
-                lblAnalysisText.Text = "🤖 AI analizi yüklenemedi: " + ex.Message;
+                _macroData = new[] { 25, 50, 25 };
             }
-        }
-
-        private async System.Threading.Tasks.Task LoadAIRecommendationsAsync()
-        {
-            if (_selectedPatient == null || _aiService == null) return;
-
-            try
+            else // Normal
             {
-                string prompt = $@"Hasta için 3 adet kişisel sağlık önerisi ver. Türkçe yanıt ver.
-
-Hasta: {_selectedPatient.AdSoyad}, Yaş: {_selectedPatient.Yas}, BMI: {_selectedPatient.BMI:F1}
-Mevcut Kilo: {_selectedPatient.GuncelKilo} kg
-
-YANIT FORMATI (sadece 3 numarat maddeli):
-1. [Kilo ile ilgili öneri]
-2. [Egzersiz önerisi]
-3. [Su/beslenme önerisi]";
-
-                string response = await _aiService.GetAIResponseAsync(prompt);
-                
-                // Parse recommendations
-                var lines = response.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-                for (int i = 0; i < lines.Length && i < 3; i++)
-                {
-                    string line = lines[i].TrimStart('1', '2', '3', '.', ' ', '-');
-                    switch (i)
-                    {
-                        case 0: lblAiRecommendation1.Text = "✓ " + line; break;
-                        case 1: lblAiRecommendation2.Text = "⚠️ " + line; break;
-                        case 2: lblAiRecommendation3.Text = "💧 " + line; break;
-                    }
-                }
-            }
-            catch { }
-        }
-
-        private async void BtnSendChat_Click(object sender, EventArgs e)
-        {
-            string message = txtChatInput.Text?.Trim();
-            if (string.IsNullOrEmpty(message)) return;
-
-            AddChatMessage(message, true);
-            txtChatInput.Text = "";
-
-            if (_aiService != null && _selectedPatient != null)
-            {
-                try
-                {
-                    string prompt = $@"Sen bir diyetisyen asistanısın. Hasta hakkında sorulan soruyu yanıtla. Türkçe yanıt ver.
-
-Hasta: {_selectedPatient.AdSoyad}, Yaş: {_selectedPatient.Yas}, Boy: {_selectedPatient.Boy} cm, Kilo: {_selectedPatient.GuncelKilo} kg, BMI: {_selectedPatient.BMI:F1}
-
-Soru: {message}
-
-Kısa ve öz yanıt ver (2-3 cümle).";
-
-                    string response = await _aiService.GetAIResponseAsync(prompt);
-                    AddChatMessage("AI: " + (response.Length > 200 ? response.Substring(0, 200) + "..." : response), false);
-                    
-                    // Save to database
-                    _chatRepo.Add(new AiChatMessage { PatientId = _selectedPatientId, DoctorId = AuthContext.UserId, Message = message, IsAiResponse = false, Timestamp = DateTime.Now });
-                    _chatRepo.Add(new AiChatMessage { PatientId = _selectedPatientId, DoctorId = AuthContext.UserId, Message = response, IsAiResponse = true, Timestamp = DateTime.Now });
-                }
-                catch (Exception ex)
-                {
-                    AddChatMessage("AI: Hata oluştu - " + ex.Message, false);
-                }
-            }
-            else
-            {
-                AddChatMessage("AI: API bağlantısı yok. OPENROUTER_API_KEY ortam değişkenini kontrol edin.", false);
+                _macroData = new[] { 30, 45, 25 };
             }
         }
 
-        private async System.Threading.Tasks.Task RequestAISuggestionAsync()
+        private void CalculateNutrition()
         {
-            if (_aiService == null || _selectedPatient == null)
-            {
-                AddChatMessage("AI: API bağlantısı yok veya hasta seçilmedi.", false);
-                return;
-            }
+            if (_patient == null) return;
 
-            AddChatMessage("Hasta için genel öneri iste", true);
+            // Varsayilan degerler - hastaya ozel hesaplama
+            int baseProtein = 70 + (_patient.Yas < 40 ? 10 : 0);
+            int baseCarb = 65 + (_patient.ActivityLevel == ActivityLevel.VeryActive ? 15 : 0);
+            int baseFat = 55 + (_patient.BMI < 25 ? 10 : 0);
+            int baseFiber = 75 + (_patient.Cinsiyet == "Kadin" ? 10 : 0);
+            int baseCalcium = 70 + (_patient.Yas > 50 ? 10 : 0);
 
-            try
-            {
-                string prompt = $@"Hasta için kişiselleştirilmiş bir diyet ve sağlık önerisi ver. Türkçe yanıt ver.
-
-Hasta: {_selectedPatient.AdSoyad}
-Yaş: {_selectedPatient.Yas}, Cinsiyet: {_selectedPatient.Cinsiyet}
-Boy: {_selectedPatient.Boy} cm, Kilo: {_selectedPatient.GuncelKilo} kg
-BMI: {_selectedPatient.BMI:F1}
-
-3-4 cümlelik kısa ve pratik bir öneri ver.";
-
-                string response = await _aiService.GetAIResponseAsync(prompt);
-                AddChatMessage("AI: " + response, false);
-            }
-            catch (Exception ex)
-            {
-                AddChatMessage("AI: Hata - " + ex.Message, false);
-            }
+            _nutritionData = new[] { 
+                Math.Min(100, baseProtein), 
+                Math.Min(100, baseCarb), 
+                Math.Min(100, baseFat), 
+                Math.Min(100, baseFiber), 
+                Math.Min(100, baseCalcium) 
+            };
         }
         #endregion
 
-        #region Helpers
-        private void DrawRoundedBorder(Graphics g, Panel panel, int radius)
+        #region AI Functions
+        private async Task GetAIRecommendationsAsync()
         {
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            using (var path = CreateRoundedRect(new Rectangle(0, 0, panel.Width - 1, panel.Height - 1), radius))
+            if (_patient == null)
             {
-                using (var brush = new SolidBrush(panel.BackColor))
-                    g.FillPath(brush, path);
-                using (var pen = new Pen(BorderGray, 1))
-                    g.DrawPath(pen, path);
+                XtraMessageBox.Show("Lutfen once bir hasta secin!", "Uyari", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            btnGetAIRecommendations.Enabled = false;
+            btnGetAIRecommendations.Text = "Yukleniyor...";
+            txtHealthRecommendations.Text = "AI onerileri aliniyor...";
+            txtMealRecommendations.Text = "AI onerileri aliniyor...";
+
+            try
+            {
+                if (_aiService != null)
+                {
+                    // Hasta verilerini hazirla
+                    double idealKilo = (_patient.Boy - 100) * 0.9;
+                    string kronikHastalik = !string.IsNullOrEmpty(_patient.MedicalHistory) ? _patient.MedicalHistory : "Yok";
+                    string ilaclar = !string.IsNullOrEmpty(_patient.Medications) ? _patient.Medications : "Yok";
+                    string alerjiler = !string.IsNullOrEmpty(_patient.AllergiesText) ? _patient.AllergiesText : "Yok";
+                    // Eski alerji listesinden de kontrol et
+                    if (alerjiler == "Yok" && _patient.Allergies?.Count > 0)
+                        alerjiler = string.Join(", ", _patient.Allergies.Select(a => a.AllergyType));
+                    
+                    // Saglik onerileri - TUM TIBBI BILGILERLE
+                    string healthPrompt = $"Diyetisyen olarak, su hasta icin Turkce kisa saglik onerileri yaz (madde madde, 5-6 madde):\n" +
+                        $"Ad: {_patient.AdSoyad}, Yas: {_patient.Yas}, Cinsiyet: {_patient.Cinsiyet}\n" +
+                        $"Boy: {_patient.Boy}cm, Kilo: {_patient.GuncelKilo}kg, BMI: {_patient.BMI:F1} ({_patient.BMIKategori})\n" +
+                        $"Ideal Kilo: {idealKilo:F0}kg, Baslangic Kilosu: {_patient.BaslangicKilosu}kg\n" +
+                        $"Kronik Hastaliklar: {kronikHastalik}\n" +
+                        $"Kullanilan Ilaclar: {ilaclar}\n" +
+                        $"Alerjiler: {alerjiler}\n" +
+                        "ONEMLI: Kronik hastaliklara ve ilaclara DIKKAT EDEREK oneriler sun. Ornegin diyabetli hastaya seker uyarisi, tansiyon hastasina tuz uyarisi ver.";
+                    
+                    string healthResponse = await _aiService.GetAIResponseAsync(healthPrompt);
+                    txtHealthRecommendations.Text = healthResponse;
+
+                    // Ogun onerileri - ALERJILERE DIKKAT
+                    string mealPrompt = $"Diyetisyen olarak, su hasta icin Turkce gunluk ogun onerisi yaz (Kahvalti, Ogle, Aksam, Ara Ogun):\n" +
+                        $"Yas: {_patient.Yas}, Cinsiyet: {_patient.Cinsiyet}, Kilo: {_patient.GuncelKilo}kg, Ideal Kilo: {idealKilo:F0}kg\n" +
+                        $"BMI: {_patient.BMI:F1} ({_patient.BMIKategori})\n" +
+                        $"Kronik Hastaliklar: {kronikHastalik}\n" +
+                        $"Kullanilan Ilaclar: {ilaclar}\n" +
+                        $"ALERJILER (KESINLIKLE BUNLARI ICEREN YIYECEK ONERME): {alerjiler}\n" +
+                        "Her ogun icin yakla kalori belirt. Alerjilere KESINLIKLE dikkat et, alerjen icerebilecek yiyecekleri ONERME.";
+                    
+                    string mealResponse = await _aiService.GetAIResponseAsync(mealPrompt);
+                    txtMealRecommendations.Text = mealResponse;
+                }
+                else
+                {
+                    // AI servisi yok - hastaya ozel hesaplanmis oneriler
+                    GeneratePatientSpecificRecommendations();
+                }
+            }
+            catch (Exception ex)
+            {
+                // Hata durumunda hastaya ozel oneriler goster
+                GeneratePatientSpecificRecommendations();
+            }
+            finally
+            {
+                btnGetAIRecommendations.Enabled = true;
+                btnGetAIRecommendations.Text = "Onerilerini Al";
             }
         }
 
-        private GraphicsPath CreateRoundedRect(Rectangle rect, int radius)
+        private void GeneratePatientSpecificRecommendations()
         {
-            var path = new GraphicsPath();
-            path.AddArc(rect.X, rect.Y, radius, radius, 180, 90);
-            path.AddArc(rect.Right - radius, rect.Y, radius, radius, 270, 90);
-            path.AddArc(rect.Right - radius, rect.Bottom - radius, radius, radius, 0, 90);
-            path.AddArc(rect.X, rect.Bottom - radius, radius, radius, 90, 90);
-            path.CloseFigure();
-            return path;
+            if (_patient == null) return;
+
+            string category = _patient.BMI < 18.5 ? "Zayif" : _patient.BMI < 25 ? "Normal" : _patient.BMI < 30 ? "Fazla Kilolu" : "Obez";
+            double idealKilo = (_patient.Boy - 100) * 0.9;
+            double kiloFark = _patient.GuncelKilo - idealKilo;
+            
+            // Saglik onerileri - hastaya ozel
+            var healthRecs = new List<string>();
+            healthRecs.Add($"[{_patient.AdSoyad} icin Ozel Oneriler]");
+            healthRecs.Add("");
+            
+            if (_patient.BMI >= 30)
+            {
+                healthRecs.Add($"- Hedef: {kiloFark:F0} kg vermek (BMI: {_patient.BMI:F1} -> 25)");
+                healthRecs.Add("- Gunluk 500-750 kalori acik olusturun");
+                healthRecs.Add("- Haftada 5 gun, 45 dk yuruyus yapin");
+                healthRecs.Add("- Sekerli ve islenmi gidalardan kacinin");
+                healthRecs.Add("- Porsiyonlarinizi %30 azaltin");
+            }
+            else if (_patient.BMI >= 25)
+            {
+                healthRecs.Add($"- Hedef: {kiloFark:F0} kg vermek");
+                healthRecs.Add("- Gunluk 300-500 kalori acik olusturun");
+                healthRecs.Add("- Haftada en az 150 dakika kardiyo egzersizi");
+                healthRecs.Add("- Ekmek ve pilav miktarini azaltin");
+            }
+            else if (_patient.BMI < 18.5)
+            {
+                healthRecs.Add($"- Hedef: {Math.Abs(kiloFark):F0} kg almak");
+                healthRecs.Add("- Gunluk kalori aliminizi 300-500 artirin");
+                healthRecs.Add("- Protein agirlikli beslenin (yumurta, et, sut)");
+                healthRecs.Add("- Guc antrenmanlari yapin");
+            }
+            else
+            {
+                healthRecs.Add("- Mevcut kilonuzu korumaya devam edin");
+                healthRecs.Add("- Duzenli egzersiz yapmaya devam edin");
+                healthRecs.Add("- Dengeli beslenmeyi surduru");
+            }
+            
+            healthRecs.Add("");
+            healthRecs.Add("- Gunde en az 2-2.5 litre su icin");
+            healthRecs.Add("- Her ogun sebze tuketin");
+            healthRecs.Add("- Uyku duzeni: 23:00-07:00");
+            
+            txtHealthRecommendations.Text = string.Join("\n", healthRecs);
+
+            // Ogun onerileri - hastaya ozel kalori hesabi
+            double bmr = 10 * _patient.GuncelKilo + 6.25 * _patient.Boy - 5 * _patient.Yas + (_patient.Cinsiyet == "Erkek" ? 5 : -161);
+            int tdee = (int)(bmr * 1.5);
+            int targetCal = _patient.BMI >= 25 ? tdee - 500 : (_patient.BMI < 18.5 ? tdee + 300 : tdee);
+            
+            int breakfast = (int)(targetCal * 0.25);
+            int lunch = (int)(targetCal * 0.35);
+            int dinner = (int)(targetCal * 0.30);
+            int snack = (int)(targetCal * 0.10);
+
+            var meals = new List<string>();
+            meals.Add($"[{_patient.AdSoyad} - Gunluk {targetCal} kcal]");
+            meals.Add("");
+            
+            meals.Add($"KAHVALTI ({breakfast} kcal):");
+            if (_patient.BMI >= 25)
+            {
+                meals.Add("- 1 dilim tam bugday ekmegi");
+                meals.Add("- 2 yumurta beyazi omlet");
+                meals.Add("- Az yagli beyaz peynir (30g)");
+                meals.Add("- Domates, salatalik, yesil biber");
+                meals.Add("- Sekersiz cay");
+            }
+            else
+            {
+                meals.Add("- 2 dilim tam bugday ekmegi");
+                meals.Add("- 1 tam yumurta (haslanmis)");
+                meals.Add("- Beyaz peynir, zeytin");
+                meals.Add("- Domates, salatalik");
+                meals.Add("- 1 bardak sut");
+            }
+            
+            meals.Add("");
+            meals.Add($"OGLE ({lunch} kcal):");
+            meals.Add("- 150g izgara tavuk veya balik");
+            meals.Add(_patient.BMI >= 25 ? "- 1/2 porsiyon bulgur pilavi" : "- 1 porsiyon bulgur pilavi");
+            meals.Add("- Bol yesil salata (limon, zeytinyagi)");
+            meals.Add("- 1 kase yogurt");
+            
+            meals.Add("");
+            meals.Add($"AKSAM ({dinner} kcal):");
+            meals.Add("- Zeytinyagli sebze yemegi");
+            meals.Add("- 100g izgara et veya balik");
+            meals.Add("- Salata");
+            meals.Add(_patient.BMI >= 25 ? "- Ekmeksiz" : "- 1 dilim ekmek");
+            
+            meals.Add("");
+            meals.Add($"ARA OGUN ({snack} kcal):");
+            meals.Add("- 1 porsiyon meyve (elma/armut)");
+            meals.Add("- 10 adet badem");
+
+            txtMealRecommendations.Text = string.Join("\n", meals);
+        }
+
+        private async Task SendChatMessageAsync()
+        {
+            string msg = txtChat.Text?.Trim();
+            if (string.IsNullOrEmpty(msg)) return;
+
+            AddChatMessage(msg, true);
+            txtChat.Text = "";
+
+            if (_aiService != null && _patient != null)
+            {
+                try
+                {
+                    // Hasta bilgilerini hazirla
+                    string kronik = !string.IsNullOrEmpty(_patient.MedicalHistory) ? _patient.MedicalHistory : "Yok";
+                    string ilac = !string.IsNullOrEmpty(_patient.Medications) ? _patient.Medications : "Yok";
+                    string alerji = !string.IsNullOrEmpty(_patient.AllergiesText) ? _patient.AllergiesText : "Yok";
+                    
+                    string prompt = $"Diyetisyen asistani olarak cevap ver.\n" +
+                        $"HASTA VERILERI:\n" +
+                        $"- Ad: {_patient.AdSoyad}\n" +
+                        $"- Yas: {_patient.Yas}\n" + 
+                        $"- Kilo: {_patient.GuncelKilo}kg, BMI: {_patient.BMI:F1}\n" +
+                        $"- Kronik Hastalik: {kronik}\n" +
+                        $"- Ilaclar: {ilac}\n" + 
+                        $"- Alerjiler: {alerji}\n\n" +
+                        $"SORU: {msg}\n\n" +
+                        "ONEMLI KURALLAR:\n" +
+                        "1. SADECE yukaridaki verilere dayanarak cevap ver.\n" +
+                        "2. Verilmemis bilgileri (aile gecmisi, baska hastalik) ASLA uydurma.\n" +
+                        "3. Kisa, profesyonel ve Turkce cevap ver.\n" +
+                        "4. Emin olmadigin seyleri tahmin etme, 'bilinmiyor' de.";
+
+                string response = await _aiService.GetAIResponseAsync(prompt);
+                    AddChatMessage(response, false);
+            }
+            catch (Exception ex)
+            {
+                    AddChatMessage("Hata: " + ex.Message, false);
+                }
+            }
+            else
+            {
+                AddChatMessage("AI servisi aktif degil. Lutfen API anahtarini kontrol edin.", false);
+            }
+        }
+
+        private void AddChatMessage(string msg, bool isUser)
+        {
+            // Mesaj uzunluguna gore dinamik yukseklik hesapla
+            int maxWidth = pnlChatHistory.Width - 40;
+            int charPerLine = maxWidth / 7; // Yaklasik karakter genisligi
+            int lineCount = (int)Math.Ceiling((double)msg.Length / charPerLine);
+            int height = Math.Max(40, Math.Min(200, lineCount * 18 + 10)); // Min 40, Max 200
+            
+            var lbl = new LabelControl
+            {
+                Text = msg,
+                Font = new Font("Segoe UI", 9),
+                ForeColor = isUser ? Color.White : TextDark,
+                BackColor = isUser ? Primary : Color.FromArgb(240, 253, 250),
+                AutoSizeMode = LabelAutoSizeMode.None,
+                Size = new Size(maxWidth, height),
+                Appearance = { TextOptions = { WordWrap = DevExpress.Utils.WordWrap.Wrap } }
+            };
+
+            int y = 5;
+            foreach (Control c in pnlChatHistory.Controls)
+                y = Math.Max(y, c.Bottom + 8);
+
+            lbl.Location = new Point(isUser ? 20 : 5, y);
+            pnlChatHistory.Controls.Add(lbl);
+            pnlChatHistory.ScrollControlIntoView(lbl);
         }
         #endregion
 

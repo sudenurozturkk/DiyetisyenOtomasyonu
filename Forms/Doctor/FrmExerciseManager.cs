@@ -112,34 +112,36 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
         {
             var panel = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
 
-            // Sol: Form paneli
+            // Sol: Form paneli (sabit %50)
             var formCard = new Panel
             {
                 Location = new Point(0, 0),
-                Size = new Size(520, 200),
+                Size = new Size(550, 165),
                 BackColor = CardWhite
             };
             formCard.Paint += (s, e) => DrawRoundedBorder(e.Graphics, formCard, 12);
             CreateFormContent(formCard);
             panel.Controls.Add(formCard);
 
-            // Sağ: Özet kartları
+            // Sağ: Özet kartları (sabit %50)
             var statsPanel = new Panel
             {
-                Location = new Point(545, 0),
-                Size = new Size(620, 200),
+                Location = new Point(565, 0),
+                Size = new Size(600, 165),
                 BackColor = Color.Transparent
             };
             CreateStatsCards(statsPanel);
             panel.Controls.Add(statsPanel);
 
-            // Resize handler
+            // Resize handler - orantılı
             panel.Resize += (s, e) =>
             {
-                int formWidth = Math.Max(450, (int)(panel.Width * 0.42));
-                formCard.Size = new Size(formWidth, 200);
-                statsPanel.Location = new Point(formWidth + 25, 0);
-                statsPanel.Size = new Size(panel.Width - formWidth - 25, 200);
+                int formWidth = (int)(panel.Width * 0.48);
+                int statsWidth = panel.Width - formWidth - 15;
+                
+                formCard.Size = new Size(formWidth, 165);
+                statsPanel.Location = new Point(formWidth + 15, 0);
+                statsPanel.Size = new Size(statsWidth, 165);
             };
 
             return panel;
@@ -147,47 +149,61 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
 
         private void CreateFormContent(Panel card)
         {
-            int x = 20, y = 15;
+            int x = 15, y = 10;
 
             // Başlık
             var lblTitle = new Label
             {
                 Text = "📋 Yeni Egzersiz Görevi Ekle",
-                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
                 ForeColor = TextDark,
                 Location = new Point(x, y),
                 AutoSize = true
             };
             card.Controls.Add(lblTitle);
-            y += 35;
+            y += 28;
 
-            // Satır 1: Hasta + Görev Adı
+            // Satır 1: Hasta + Görev Adı + Açıklama + Buton
             AddFormLabel(card, "Hasta:", x, y);
-            cmbHasta = new ComboBoxEdit { Location = new Point(x, y + 18), Size = new Size(160, 26) };
+            cmbHasta = new ComboBoxEdit { Location = new Point(x, y + 15), Size = new Size(120, 24) };
+            cmbHasta.Properties.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor;
             card.Controls.Add(cmbHasta);
 
-            AddFormLabel(card, "Görev Adı:", x + 175, y);
+            AddFormLabel(card, "Görev Adı:", x + 130, y);
             txtGorevAdi = new TextEdit
             {
-                Location = new Point(x + 175, y + 18),
-                Size = new Size(200, 26),
+                Location = new Point(x + 130, y + 15),
+                Size = new Size(140, 24),
                 Properties = { NullText = "30 dakika yürüyüş" }
             };
             card.Controls.Add(txtGorevAdi);
 
-            AddFormLabel(card, "Açıklama:", x + 390, y);
+            AddFormLabel(card, "Açıklama:", x + 280, y);
             txtAciklama = new MemoEdit
             {
-                Location = new Point(x + 390, y + 18),
-                Size = new Size(100, 26),
+                Location = new Point(x + 280, y + 15),
+                Size = new Size(120, 24),
                 Properties = { NullText = "Detay..." }
             };
             card.Controls.Add(txtAciklama);
-            y += 52;
+
+            // Görev Ata Butonu
+            var btnEkle = new SimpleButton
+            {
+                Text = "+ GÖREV ATA",
+                Location = new Point(x + 410, y + 13),
+                Size = new Size(105, 28),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Appearance = { BackColor = PrimaryGreen, ForeColor = Color.White, BorderColor = PrimaryGreen }
+            };
+            btnEkle.Click += BtnAdd_Click;
+            card.Controls.Add(btnEkle);
+            
+            y += 48;
 
             // Satır 2: Süre + Zorluk + Tarih
             AddFormLabel(card, "Süre:", x, y);
-            spnSure = new SpinEdit { Location = new Point(x, y + 18), Size = new Size(60, 26) };
+            spnSure = new SpinEdit { Location = new Point(x, y + 15), Size = new Size(50, 24) };
             spnSure.Properties.MinValue = 5;
             spnSure.Properties.MaxValue = 180;
             spnSure.EditValue = 30;
@@ -196,35 +212,24 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
             var lblDk = new Label
             {
                 Text = "dk",
-                Font = new Font("Segoe UI", 9F),
+                Font = new Font("Segoe UI", 8F),
                 ForeColor = TextMedium,
-                Location = new Point(x + 65, y + 22),
+                Location = new Point(x + 55, y + 18),
                 AutoSize = true
             };
             card.Controls.Add(lblDk);
 
-            AddFormLabel(card, "Zorluk:", x + 100, y);
-            cmbZorluk = new ComboBoxEdit { Location = new Point(x + 100, y + 18), Size = new Size(120, 26) };
+            AddFormLabel(card, "Zorluk:", x + 85, y);
+            cmbZorluk = new ComboBoxEdit { Location = new Point(x + 85, y + 15), Size = new Size(100, 24) };
             cmbZorluk.Properties.Items.AddRange(new[] { "1 - Kolay", "2 - Hafif", "3 - Orta", "4 - Zor", "5 - Çok Zor" });
             cmbZorluk.SelectedIndex = 2;
+            cmbZorluk.Properties.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor;
             card.Controls.Add(cmbZorluk);
 
-            AddFormLabel(card, "Tarih:", x + 235, y);
-            dtTarih = new DateEdit { Location = new Point(x + 235, y + 18), Size = new Size(130, 26) };
+            AddFormLabel(card, "Tarih:", x + 200, y);
+            dtTarih = new DateEdit { Location = new Point(x + 200, y + 15), Size = new Size(110, 24) };
             dtTarih.EditValue = DateTime.Today.AddDays(1);
             card.Controls.Add(dtTarih);
-
-            // Ekle Butonu
-            var btnEkle = new SimpleButton
-            {
-                Text = "+ GÖREV ATA",
-                Location = new Point(x + 380, y + 15),
-                Size = new Size(110, 32),
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                Appearance = { BackColor = PrimaryGreen, ForeColor = Color.White, BorderColor = PrimaryGreen }
-            };
-            btnEkle.Click += BtnAdd_Click;
-            card.Controls.Add(btnEkle);
 
             // Hastaları yükle
             LoadPatients();
@@ -236,33 +241,33 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
             lblPatientStats = new Label
             {
                 Text = "📊 Tüm Hastalar - Genel İstatistikler",
-                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
                 ForeColor = TextDark,
-                Location = new Point(0, 0),
+                Location = new Point(5, 0),
                 AutoSize = true
             };
             parent.Controls.Add(lblPatientStats);
 
-            // 4 kart yan yana
-            int cardY = 35;
-            int cardWidth = 140;
-            int cardHeight = 100;
-            int gap = 15;
+            // 4 kart yan yana - KOMPAKT
+            int cardY = 30;
+            int cardWidth = 125;
+            int cardHeight = 95;
+            int gap = 10;
 
             // Kart 1: Toplam
-            lblTotalTasks = new Label { Text = "0", Font = new Font("Segoe UI", 24F, FontStyle.Bold), ForeColor = TextDark };
+            lblTotalTasks = new Label { Text = "0", Font = new Font("Segoe UI", 22F, FontStyle.Bold), ForeColor = TextDark };
             parent.Controls.Add(CreateStatCard("📋", "Toplam Görev", lblTotalTasks, PrimaryGreen, LightGreen, 0, cardY, cardWidth, cardHeight));
 
             // Kart 2: Tamamlanan
-            lblCompletedTasks = new Label { Text = "0", Font = new Font("Segoe UI", 24F, FontStyle.Bold), ForeColor = TextDark };
+            lblCompletedTasks = new Label { Text = "0", Font = new Font("Segoe UI", 22F, FontStyle.Bold), ForeColor = TextDark };
             parent.Controls.Add(CreateStatCard("✓", "Tamamlandı", lblCompletedTasks, SuccessGreen, SuccessBg, cardWidth + gap, cardY, cardWidth, cardHeight));
 
             // Kart 3: Bekliyor
-            lblPendingTasks = new Label { Text = "0", Font = new Font("Segoe UI", 24F, FontStyle.Bold), ForeColor = TextDark };
+            lblPendingTasks = new Label { Text = "0", Font = new Font("Segoe UI", 22F, FontStyle.Bold), ForeColor = TextDark };
             parent.Controls.Add(CreateStatCard("⏳", "Bekliyor", lblPendingTasks, WarningOrange, WarningBg, (cardWidth + gap) * 2, cardY, cardWidth, cardHeight));
 
             // Kart 4: Başarı Oranı
-            lblSuccessRate = new Label { Text = "%0", Font = new Font("Segoe UI", 24F, FontStyle.Bold), ForeColor = PrimaryGreen };
+            lblSuccessRate = new Label { Text = "%0", Font = new Font("Segoe UI", 22F, FontStyle.Bold), ForeColor = PrimaryGreen };
             parent.Controls.Add(CreateStatCard("🏆", "Başarı Oranı", lblSuccessRate, GoldColor, GoldBg, (cardWidth + gap) * 3, cardY, cardWidth, cardHeight));
         }
 
@@ -274,19 +279,19 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
                 Size = new Size(width, height),
                 BackColor = CardWhite
             };
-            card.Paint += (s, e) => DrawRoundedBorder(e.Graphics, card, 10);
+            card.Paint += (s, e) => DrawRoundedBorder(e.Graphics, card, 8);
 
-            // Icon
-            var iconPanel = new Panel { Location = new Point(12, 12), Size = new Size(36, 36), BackColor = Color.Transparent };
+            // Icon - küçük
+            var iconPanel = new Panel { Location = new Point(8, 8), Size = new Size(28, 28), BackColor = Color.Transparent };
             iconPanel.Paint += (s, e) =>
             {
                 e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
                 using (var brush = new SolidBrush(bgColor))
-                    e.Graphics.FillEllipse(brush, 0, 0, 35, 35);
-                using (var font = new Font("Segoe UI", 12F))
+                    e.Graphics.FillEllipse(brush, 0, 0, 27, 27);
+                using (var font = new Font("Segoe UI", 10F))
                 using (var brush = new SolidBrush(iconColor))
                 using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
-                    e.Graphics.DrawString(icon, font, brush, new RectangleF(0, 0, 36, 36), sf);
+                    e.Graphics.DrawString(icon, font, brush, new RectangleF(0, 0, 28, 28), sf);
             };
             card.Controls.Add(iconPanel);
 
@@ -294,15 +299,15 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
             var lblTitle = new Label
             {
                 Text = title,
-                Font = new Font("Segoe UI", 8F),
+                Font = new Font("Segoe UI", 7.5F),
                 ForeColor = TextMedium,
-                Location = new Point(52, 12),
-                Size = new Size(80, 30)
+                Location = new Point(40, 8),
+                Size = new Size(80, 28)
             };
             card.Controls.Add(lblTitle);
 
             // Value
-            valueLabel.Location = new Point(12, 55);
+            valueLabel.Location = new Point(10, 48);
             valueLabel.AutoSize = true;
             card.Controls.Add(valueLabel);
 
@@ -336,6 +341,7 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
 
             cmbFilterHasta = new ComboBoxEdit { Location = new Point(x + 50, 12), Size = new Size(180, 28) };
             cmbFilterHasta.Properties.NullText = "Tüm Hastalar";
+            cmbFilterHasta.Properties.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor;
             cmbFilterHasta.SelectedIndexChanged += (s, e) => FilterTasks();
             panel.Controls.Add(cmbFilterHasta);
             x += 250;
@@ -563,31 +569,49 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
             try
             {
                 var patients = _patientService.GetPatientsByDoctor(AuthContext.UserId);
-                cmbHasta.Properties.Items.Clear();
                 
+                // Form combobox
+                if (cmbHasta != null)
+                {
+                    cmbHasta.Properties.Items.Clear();
+                    foreach (var p in patients)
+                    {
+                        cmbHasta.Properties.Items.Add(new PatientItem { Id = p.Id, Name = p.AdSoyad });
+                    }
+                    if (cmbHasta.Properties.Items.Count > 0)
+                        cmbHasta.SelectedIndex = 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("LoadPatients Error: " + ex.Message);
+            }
+        }
+        
+        private void LoadFilterPatients()
+        {
+            try
+            {
+                var patients = _patientService.GetPatientsByDoctor(AuthContext.UserId);
+                
+                // Filter combobox
                 if (cmbFilterHasta != null)
                 {
                     cmbFilterHasta.Properties.Items.Clear();
                     cmbFilterHasta.Properties.Items.Add(new PatientItem { Id = 0, Name = "Tüm Hastalar" });
-                }
-                
-                foreach (var p in patients)
-                {
-                    var item = new PatientItem { Id = p.Id, Name = p.AdSoyad };
-                    cmbHasta.Properties.Items.Add(item);
                     
-                    if (cmbFilterHasta != null)
+                    foreach (var p in patients)
                     {
-                        cmbFilterHasta.Properties.Items.Add(item);
+                        cmbFilterHasta.Properties.Items.Add(new PatientItem { Id = p.Id, Name = p.AdSoyad });
                     }
+                    if (cmbFilterHasta.Properties.Items.Count > 0)
+                        cmbFilterHasta.SelectedIndex = 0;
                 }
-                if (cmbHasta.Properties.Items.Count > 0)
-                    cmbHasta.SelectedIndex = 0;
-                    
-                if (cmbFilterHasta != null && cmbFilterHasta.Properties.Items.Count > 0)
-                    cmbFilterHasta.SelectedIndex = 0;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("LoadFilterPatients Error: " + ex.Message);
+            }
         }
         #endregion
 
@@ -596,9 +620,13 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
         {
             try
             {
+                // Filtre combobox'ını yükle
+                LoadFilterPatients();
+                
                 _allTasks = _taskRepository.GetByDoctor(AuthContext.UserId).ToList();
                 _filteredTasks = _allTasks;
                 gridTasks.DataSource = _filteredTasks;
+                gridTasks.RefreshDataSource();
                 UpdateSummary();
             }
             catch (Exception ex)

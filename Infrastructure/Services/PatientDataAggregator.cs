@@ -19,6 +19,8 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
         private readonly MealRepository _mealRepository;
         private readonly MealFeedbackRepository _feedbackRepository;
         private readonly BodyMeasurementRepository _measurementRepository;
+        private readonly GoalRepository _goalRepository;
+        private readonly NoteRepository _noteRepository;
 
         public PatientDataAggregator()
         {
@@ -29,6 +31,8 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
             _mealRepository = new MealRepository();
             _feedbackRepository = new MealFeedbackRepository();
             _measurementRepository = new BodyMeasurementRepository();
+            _goalRepository = new GoalRepository();
+            _noteRepository = new NoteRepository();
         }
 
         /// <summary>
@@ -104,7 +108,53 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
                 }
             }
 
+            // 4. Hedefler
+            try
+            {
+                var goals = _goalRepository.GetByPatientId(patientId).Where(g => g.IsActive).ToList();
+                if (goals.Any())
+                {
+                    sb.AppendLine("\n### AKTİF HEDEFLER");
+                    foreach (var g in goals)
+                    {
+                        double progress = g.TargetValue > 0 ? (g.CurrentValue / g.TargetValue * 100) : 0;
+                        string status = progress >= 100 ? "Tamamlandı" : (progress >= 50 ? "İlerliyor" : "Başlangıç");
+                        sb.AppendLine($"- {GetGoalTypeName(g.GoalType)}: Mevcut {g.CurrentValue:F1} / Hedef {g.TargetValue:F1} {g.Unit} (%{progress:F0} - {status})");
+                    }
+                }
+            }
+            catch { /* Hedef verisi alınamazsa devam et */ }
+
+            // 5. Diyetisyen Notları
+            try
+            {
+                var notes = _noteRepository.GetByPatientId(patientId).OrderByDescending(n => n.Date).Take(5).ToList();
+                if (notes.Any())
+                {
+                    sb.AppendLine("\n### DİYETİSYEN NOTLARI (Son 5)");
+                    foreach (var n in notes)
+                    {
+                        string content = n.Content ?? "";
+                        if (content.Length > 100) content = content.Substring(0, 100) + "...";
+                        sb.AppendLine($"- {n.Date:dd.MM.yyyy}: {content}");
+                    }
+                }
+            }
+            catch { /* Not verisi alınamazsa devam et */ }
+
             return sb.ToString();
+        }
+
+        private string GetGoalTypeName(GoalType type)
+        {
+            switch (type)
+            {
+                case GoalType.Weight: return "Kilo Hedefi";
+                case GoalType.Water: return "Su Tüketimi";
+                case GoalType.Steps: return "Adım Sayısı";
+                case GoalType.Calories: return "Kalori";
+                default: return "Hedef";
+            }
         }
 
         private List<MealFeedback> GetMealFeedbacks(int patientId, int days)

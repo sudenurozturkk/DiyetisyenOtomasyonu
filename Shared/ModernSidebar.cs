@@ -33,29 +33,8 @@ namespace DiyetisyenOtomasyonu.Shared
         private readonly Color TextNormal = Color.FromArgb(220, 255, 255, 255);
         private readonly Color TextActive = Color.White;
         
-        // Menu Icons matching mockup design
-        private readonly Dictionary<string, string> MenuIcons = new Dictionary<string, string>
-        {
-            { "home", "🏠" },
-            { "patients", "👥" },
-            { "plans", "🍽" },
-            { "meals", "�" },
-            { "exercises", "�" },
-            { "appointments", "�" },
-            { "financials", "$" },
-            { "goals", "🎯" },
-            { "notes", "�" },
-            { "messages", "💬" },
-            { "analytics", "�" },
-            { "aianalysis", "🤖" },
-            { "settings", "⚙" },
-            { "logout", "🚪" },
-            // Patient-specific
-            { "myplan", "🥗" },
-            { "myprogress", "📈" },
-            { "mytasks", "✅" },
-            { "aiassistant", "🤖" }
-        };
+        // Menu Icons - Dinamik olarak AddMenuItem'dan alinan ikonlar
+        private readonly Dictionary<string, string> MenuIcons = new Dictionary<string, string>();
         
         public PanelControl MenuPanel { get; private set; }
         public event EventHandler<string> MenuItemClicked;
@@ -114,27 +93,59 @@ namespace DiyetisyenOtomasyonu.Shared
                 BackColor = HeaderBg
             };
 
-            // Logo circle
-            var logoPanel = new Panel
+            // Logo - resim olarak
+            var logoPanel = new PictureBox
             {
                 Size = new Size(44, 44),
                 Location = new Point(12, 12),
-                BackColor = Color.White,
-                Name = "logoPanel" // Add Name to find it later
+                BackColor = Color.Transparent,
+                SizeMode = PictureBoxSizeMode.Zoom,
+                Name = "logoPanel"
             };
-            logoPanel.Paint += (s, e) => {
-                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                using (var brush = new SolidBrush(Color.White))
+            
+            // Logo resmini yükle
+            try
+            {
+                string logoPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "logo.png");
+                if (System.IO.File.Exists(logoPath))
                 {
-                    e.Graphics.FillEllipse(brush, 0, 0, 43, 43);
+                    logoPanel.Image = Image.FromFile(logoPath);
                 }
-                using (var brush = new SolidBrush(SidebarBgStart))
-                using (var font = new Font("Segoe UI", 14F, FontStyle.Bold))
-                using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+                else
                 {
-                    e.Graphics.DrawString("DP", font, brush, new RectangleF(0, 0, 44, 44), sf);
+                    // Fallback: DP yazısı çiz
+                    logoPanel.Paint += (s, e) => {
+                        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                        using (var brush = new SolidBrush(Color.White))
+                        {
+                            e.Graphics.FillEllipse(brush, 0, 0, 43, 43);
+                        }
+                        using (var brush = new SolidBrush(SidebarBgStart))
+                        using (var font = new Font("Segoe UI", 14F, FontStyle.Bold))
+                        using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+                        {
+                            e.Graphics.DrawString("DP", font, brush, new RectangleF(0, 0, 44, 44), sf);
+                        }
+                    };
                 }
-            };
+            }
+            catch
+            {
+                // Fallback: DP yazısı çiz
+                logoPanel.Paint += (s, e) => {
+                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                    using (var brush = new SolidBrush(Color.White))
+                    {
+                        e.Graphics.FillEllipse(brush, 0, 0, 43, 43);
+                    }
+                    using (var brush = new SolidBrush(SidebarBgStart))
+                    using (var font = new Font("Segoe UI", 14F, FontStyle.Bold))
+                    using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+                    {
+                        e.Graphics.DrawString("DP", font, brush, new RectangleF(0, 0, 44, 44), sf);
+                    }
+                };
+            }
             headerPanel.Controls.Add(logoPanel);
 
             // Brand name
@@ -202,7 +213,9 @@ namespace DiyetisyenOtomasyonu.Shared
             var item = new SidebarItem { Icon = icon, Text = text, Key = key };
             menuItems.Add(item);
             
-            string iconText = MenuIcons.ContainsKey(key) ? MenuIcons[key] : "•";
+            // İkonu dinamik olarak kaydet
+            MenuIcons[key] = icon;
+            string iconText = icon;
             bool isSelected = key == selectedKey;
 
             var btn = new SimpleButton

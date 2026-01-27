@@ -1,324 +1,227 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
 using DevExpress.XtraCharts;
+using DiyetisyenOtomasyonu.Domain;
 using DiyetisyenOtomasyonu.Infrastructure.Services;
 using DiyetisyenOtomasyonu.Infrastructure.Security;
+using DiyetisyenOtomasyonu.Shared;
 
 namespace DiyetisyenOtomasyonu.Forms.Patient
 {
-    /// <summary>
-    /// İlerleme Takip Formu - Modern Tasarım
-    /// </summary>
     public partial class FrmProgress : XtraForm
     {
-        private readonly PatientService _patientService;
-        private readonly DietService _dietService;
+        private readonly DiyetisyenOtomasyonu.Infrastructure.Services.ReportService _reportService;
+        private readonly DiyetisyenOtomasyonu.Infrastructure.Repositories.PatientRepository _patientRepo;
         private ChartControl chartWeight;
-        private ChartControl chartCompletion;
-        private DateEdit dateStart;
-        private DateEdit dateEnd;
-        private LabelControl lblWeightChange;
+        private ComboBoxEdit cmbDateRange;
 
-        // Modern Renkler - Yeşil Tema
-        private readonly Color PrimaryGreen = Color.FromArgb(13, 148, 136);
-        private readonly Color SuccessGreen = Color.FromArgb(34, 197, 94);
-        private readonly Color DangerRed = Color.FromArgb(239, 68, 68);
-        private readonly Color InfoBlue = Color.FromArgb(59, 130, 246);
-        private readonly Color CardWhite = Color.White;
-        private readonly Color BackgroundLight = Color.FromArgb(248, 250, 252);
-        private readonly Color TextDark = Color.FromArgb(30, 41, 59);
-        private readonly Color TextMedium = Color.FromArgb(100, 116, 139);
-        private readonly Color BorderGray = Color.FromArgb(226, 232, 240);
+        // Modern Renkler - UiStyles
+        private Color PrimaryColor => UiStyles.PrimaryColor;
+        private Color SuccessGreen => UiStyles.SuccessColor;
+        private Color InfoBlue => UiStyles.InfoColor;
+        private Color WarningOrange => UiStyles.WarningColor;
+        private Color CardColor => Color.White;
+        private Color BackgroundColor => Color.FromArgb(245, 247, 250);
+        private Color TextPrimary => UiStyles.TextPrimary;
+        private Color TextSecondary => UiStyles.TextSecondary;
 
         public FrmProgress()
         {
             InitializeComponent();
-            _patientService = new PatientService();
-            _dietService = new DietService();
-            InitializeUI();
-            LoadCharts();
+            _reportService = new DiyetisyenOtomasyonu.Infrastructure.Services.ReportService();
+            _patientRepo = new DiyetisyenOtomasyonu.Infrastructure.Repositories.PatientRepository();
+            SetupUI();
+            LoadData();
         }
 
-        private void InitializeUI()
+        private void SetupUI()
         {
             this.Text = "İlerlemem";
-            this.BackColor = BackgroundLight;
+            this.BackColor = BackgroundColor;
             this.FormBorderStyle = FormBorderStyle.None;
-            this.Padding = new Padding(15);
+            this.Padding = new Padding(20);
 
-            // Ana Layout
             var mainLayout = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 1,
                 RowCount = 2,
+                ColumnCount = 1,
                 BackColor = Color.Transparent
             };
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 80)); // Filtre
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // Grafikler
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 100)); // Summary Cards
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));  // Chart
 
-            // 1. Filtre Paneli
-            var pnlFilter = CreateFilterPanel();
-            mainLayout.Controls.Add(pnlFilter, 0, 0);
+            // 1. Summary Cards
+            var summaryPanel = CreateSummaryPanel();
+            mainLayout.Controls.Add(summaryPanel, 0, 0);
 
-            // 2. Grafikler (Split)
-            var splitCharts = new SplitContainerControl
-            {
-                Dock = DockStyle.Fill,
-                Horizontal = false,
-                SplitterPosition = 300,
-                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder,
-                BackColor = Color.Transparent
-            };
-            
-            // Kilo Grafiği Kartı
-            var pnlWeight = CreateChartCard("📉 Kilo Değişimi", out chartWeight);
-            splitCharts.Panel1.Controls.Add(pnlWeight);
-            splitCharts.Panel1.Padding = new Padding(0, 0, 0, 10);
+            // 2. Chart Section
+            var chartPanel = CreateChartPanel();
+            mainLayout.Controls.Add(chartPanel, 0, 1);
 
-            // Tamamlama Grafiği Kartı
-            var pnlCompletion = CreateChartCard("✅ Haftalık Tamamlama Oranı", out chartCompletion);
-            splitCharts.Panel2.Controls.Add(pnlCompletion);
-            splitCharts.Panel2.Padding = new Padding(0, 10, 0, 0);
-
-            mainLayout.Controls.Add(splitCharts, 0, 1);
             this.Controls.Add(mainLayout);
         }
 
-        private Panel CreateFilterPanel()
+        private PanelControl CreateSummaryPanel()
         {
-            var panel = new Panel { Dock = DockStyle.Fill, BackColor = CardWhite, Padding = new Padding(15), Margin = new Padding(0, 0, 0, 15) };
-            panel.Paint += (s, e) => DrawRoundedBorder(e.Graphics, panel, 12);
-
-            // Başlangıç
-            AddLabel(panel, "Başlangıç:", 20, 28);
-            dateStart = new DateEdit
+            var panel = new PanelControl
             {
-                Location = new Point(95, 25),
-                Size = new Size(130, 30),
-                Properties = { Appearance = { Font = new Font("Segoe UI", 10F) } }
+                Dock = DockStyle.Fill,
+                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder,
+                BackColor = Color.Transparent
             };
-            dateStart.DateTime = DateTime.Now.AddMonths(-1);
-            panel.Controls.Add(dateStart);
 
-            // Bitiş
-            AddLabel(panel, "Bitiş:", 240, 28);
-            dateEnd = new DateEdit
+            var patient = _patientRepo.GetById(AuthContext.UserId);
+            if (patient != null)
             {
-                Location = new Point(280, 25),
-                Size = new Size(130, 30),
-                Properties = { Appearance = { Font = new Font("Segoe UI", 10F) } }
-            };
-            dateEnd.DateTime = DateTime.Now;
-            panel.Controls.Add(dateEnd);
+                double lostWeight = patient.BaslangicKilosu - patient.GuncelKilo;
+                string lostWeightText = lostWeight > 0 ? $"-{lostWeight:F1} kg" : $"+{Math.Abs(lostWeight):F1} kg";
+                Color lostColor = lostWeight > 0 ? SuccessGreen : WarningOrange;
 
-            // Yenile Butonu
-            var btnRefresh = new SimpleButton
-            {
-                Text = "YENİLE",
-                Location = new Point(430, 23),
-                Size = new Size(100, 34),
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                Appearance = { BackColor = PrimaryGreen, ForeColor = Color.White }
-            };
-            btnRefresh.Click += (s, e) => LoadCharts();
-            panel.Controls.Add(btnRefresh);
+                double bmi = patient.Boy > 0 ? patient.GuncelKilo / (patient.Boy * patient.Boy) : 0;
+                
+                int cardWidth = 220;
+                int spacing = 20;
 
-            // Özet Bilgi
-            lblWeightChange = new LabelControl
+                CreateStatCard(panel, 0, 0, "Güncel Kilo", $"{patient.GuncelKilo} kg", PrimaryColor);
+                CreateStatCard(panel, cardWidth + spacing, 0, "Toplam Değişim", lostWeightText, lostColor);
+                CreateStatCard(panel, 2 * (cardWidth + spacing), 0, "BMI", $"{bmi:F1}", InfoBlue);
+            }
+
+            // Date Range Filter (Right aligned)
+            cmbDateRange = new ComboBoxEdit
             {
-                Text = "Kilo Değişimi: --",
-                Location = new Point(560, 28),
-                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
-                ForeColor = SuccessGreen
+                Location = new Point(panel.Width - 220, 20),
+                Size = new Size(200, 30),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                Properties = { TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor }
             };
-            panel.Controls.Add(lblWeightChange);
+            cmbDateRange.Properties.Items.AddRange(new[] { "Son 1 Ay", "Son 3 Ay", "Son 6 Ay", "Tüm Zamanlar" });
+            cmbDateRange.SelectedIndex = 0;
+            cmbDateRange.SelectedIndexChanged += (s, e) => LoadData();
+            panel.Controls.Add(cmbDateRange);
 
             return panel;
         }
 
-        private Panel CreateChartCard(string title, out ChartControl chartCtrl)
+        private void CreateStatCard(PanelControl parent, int x, int y, string title, string value, Color color)
         {
-            var card = new Panel { Dock = DockStyle.Fill, BackColor = CardWhite, Padding = new Padding(10) };
-            card.Paint += (s, e) => DrawRoundedBorder(e.Graphics, card, 12);
+            var card = new PanelControl
+            {
+                Location = new Point(x, y),
+                Size = new Size(220, 80),
+                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder,
+                BackColor = CardColor
+            };
 
-            var lblTitle = new Label
+            var border = new PanelControl
+            {
+                Dock = DockStyle.Left,
+                Width = 4,
+                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder,
+                BackColor = color
+            };
+            card.Controls.Add(border);
+
+            var lblTitle = new LabelControl
             {
                 Text = title,
-                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
-                ForeColor = TextDark,
-                Location = new Point(15, 10),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = TextSecondary,
+                Location = new Point(15, 15),
                 AutoSize = true
             };
             card.Controls.Add(lblTitle);
 
-            var chart = new ChartControl
+            var lblValue = new LabelControl
             {
-                Dock = DockStyle.Bottom,
-                Height = card.Height - 50, // Başlık payı
-                BorderOptions = { Visibility = DevExpress.Utils.DefaultBoolean.False }
-            };
-            
-            // Fix CS1628: Capture local variable instead of out parameter in lambda
-            var capturedChart = chart; 
-            card.Resize += (s, e) => capturedChart.Height = card.Height - 50;
-            
-            card.Controls.Add(chart);
-            chartCtrl = chart; // Assign to out parameter at the end
-            return card;
-        }
-
-        private void AddLabel(Panel parent, string text, int x, int y)
-        {
-            var lbl = new Label
-            {
-                Text = text,
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                ForeColor = TextMedium,
-                Location = new Point(x, y),
+                Text = value,
+                Font = new Font("Segoe UI", 18F, FontStyle.Bold),
+                ForeColor = color,
+                Location = new Point(15, 35),
                 AutoSize = true
             };
-            parent.Controls.Add(lbl);
+            card.Controls.Add(lblValue);
+
+            parent.Controls.Add(card);
         }
 
-        private void LoadCharts()
+        private PanelControl CreateChartPanel()
         {
-            LoadWeightChart();
-            LoadCompletionChart();
-        }
-
-        private void LoadWeightChart()
-        {
-            chartWeight.Series.Clear();
-
-            var entries = _patientService.GetWeightHistory(AuthContext.UserId)
-                .Where(w => w.Date >= dateStart.DateTime && w.Date <= dateEnd.DateTime)
-                .OrderBy(w => w.Date)
-                .ToList();
-
-            if (entries.Count == 0)
+            var panel = new PanelControl
             {
-                lblWeightChange.Text = "Kilo Değişimi: Veri yok";
-                lblWeightChange.ForeColor = TextMedium;
-                return;
-            }
+                Dock = DockStyle.Fill,
+                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder,
+                BackColor = CardColor,
+                Padding = new Padding(10)
+            };
 
-            // Kilo degisimini hesapla
-            double firstWeight = entries.First().Weight;
-            double lastWeight = entries.Last().Weight;
-            double change = lastWeight - firstWeight;
+            chartWeight = new ChartControl
+            {
+                Dock = DockStyle.Fill,
+                BorderOptions = { Visibility = DevExpress.Utils.DefaultBoolean.False }
+            };
 
-            if (change < 0)
-            {
-                lblWeightChange.Text = "Kilo Değişimi: " + change.ToString("0.0") + " kg";
-                lblWeightChange.ForeColor = SuccessGreen;
-            }
-            else if (change > 0)
-            {
-                lblWeightChange.Text = "Kilo Değişimi: +" + change.ToString("0.0") + " kg";
-                lblWeightChange.ForeColor = DangerRed;
-            }
-            else
-            {
-                lblWeightChange.Text = "Kilo Değişimi: 0 kg";
-                lblWeightChange.ForeColor = TextMedium;
-            }
-
-            var series = new Series("Kilo (kg)", ViewType.Spline);
+            // Chart Setup
+            chartWeight.Legend.Visibility = DevExpress.Utils.DefaultBoolean.False;
+            
+            // Series
+            Series series = new Series("Kilo Değişimi", ViewType.SplineArea);
             series.ArgumentScaleType = ScaleType.DateTime;
-
-            foreach (var entry in entries)
-            {
-                series.Points.Add(new SeriesPoint(entry.Date, entry.Weight));
-            }
-
-            var view = (LineSeriesView)series.View;
-            view.LineStyle.Thickness = 4;
-            view.Color = PrimaryGreen;
-            view.MarkerVisibility = DevExpress.Utils.DefaultBoolean.True;
-            // Fix CS1061: Use LineMarkerOptions instead of MarkerStyle if available, or just skip detailed marker styling if not essential
-            // In some versions it is view.LineMarkerOptions.Kind = MarkerKind.Circle;
-            // For now, let's just enable visibility which is safe.
+            series.View.Color = Color.FromArgb(100, PrimaryColor); // Transparent fill
+            ((SplineAreaSeriesView)series.View).Border.Color = PrimaryColor;
+            ((SplineAreaSeriesView)series.View).Border.Thickness = 3;
+            ((SplineAreaSeriesView)series.View).MarkerVisibility = DevExpress.Utils.DefaultBoolean.True;
             
             chartWeight.Series.Add(series);
-            
-            // Diagram ayarları
+            panel.Controls.Add(chartWeight);
+
+            // Diagram Configuration (Must be done AFTER adding series)
             if (chartWeight.Diagram is XYDiagram diagram)
             {
-                diagram.DefaultPane.BackColor = Color.White;
-                diagram.DefaultPane.BorderVisible = false;
-                diagram.AxisX.Label.Font = new Font("Segoe UI", 9F);
-                diagram.AxisY.Label.Font = new Font("Segoe UI", 9F);
                 diagram.AxisX.DateTimeScaleOptions.MeasureUnit = DateTimeMeasureUnit.Day;
-            }
-        }
-
-        private void LoadCompletionChart()
-        {
-            chartCompletion.Series.Clear();
-
-            var weeks = _dietService.GetPatientAllWeeks(AuthContext.UserId)
-                .OrderBy(w => w.WeekStartDate)
-                .ToList();
-
-            if (weeks.Count == 0) return;
-
-            var series = new Series("Tamamlama %", ViewType.Bar);
-
-            foreach (var week in weeks)
-            {
-                series.Points.Add(new SeriesPoint(week.WeekStartDate.ToString("dd.MM"), week.WeeklyCompletionRate));
-            }
-
-            var view = (BarSeriesView)series.View;
-            view.Color = InfoBlue;
-            // Fix CS0104: Specify full namespace for FillMode
-            view.FillStyle.FillMode = DevExpress.XtraCharts.FillMode.Solid;
-            
-            chartCompletion.Series.Add(series);
-            chartCompletion.Legend.Visibility = DevExpress.Utils.DefaultBoolean.False;
-            
-            if (chartCompletion.Diagram is XYDiagram diagram)
-            {
+                diagram.AxisX.Label.TextPattern = "{A:dd MMM}";
+                diagram.AxisY.Title.Text = "Kilo (kg)";
+                diagram.AxisY.Title.Visibility = DevExpress.Utils.DefaultBoolean.True;
+                diagram.EnableAxisXScrolling = true;
+                diagram.EnableAxisXZooming = true;
+                
+                // Grid lines
+                diagram.AxisY.GridLines.Visible = true;
+                diagram.AxisY.GridLines.Color = Color.FromArgb(240, 240, 240);
+                diagram.AxisX.GridLines.Visible = false;
+                
                 diagram.DefaultPane.BackColor = Color.White;
                 diagram.DefaultPane.BorderVisible = false;
-                diagram.AxisX.Label.Font = new Font("Segoe UI", 9F);
-                diagram.AxisY.Label.Font = new Font("Segoe UI", 9F);
             }
+
+            return panel;
         }
 
-        private void DrawRoundedBorder(Graphics g, Panel panel, int radius)
+        private void LoadData()
         {
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            using (var path = CreateRoundedRect(new Rectangle(0, 0, panel.Width - 1, panel.Height - 1), radius))
-            using (var brush = new SolidBrush(panel.BackColor))
-            using (var pen = new Pen(BorderGray, 1))
+            DateTime startDate = DateTime.Now.AddMonths(-1);
+            if (cmbDateRange.SelectedIndex == 1) startDate = DateTime.Now.AddMonths(-3);
+            else if (cmbDateRange.SelectedIndex == 2) startDate = DateTime.Now.AddMonths(-6);
+            else if (cmbDateRange.SelectedIndex == 3) startDate = DateTime.MinValue;
+
+            var weightHistory = _reportService.GetWeightHistory(AuthContext.UserId, startDate, DateTime.Now);
+            
+            chartWeight.Series[0].Points.Clear();
+            foreach (var entry in weightHistory)
             {
-                g.FillPath(brush, path);
-                g.DrawPath(pen, path);
+                chartWeight.Series[0].Points.Add(new SeriesPoint(entry.Date, entry.Weight));
             }
-        }
-
-        private GraphicsPath CreateRoundedRect(Rectangle rect, int radius)
-        {
-            var path = new GraphicsPath();
-            int d = radius * 2;
-            path.AddArc(rect.X, rect.Y, d, d, 180, 90);
-            path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90);
-            path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
-            path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
-            path.CloseFigure();
-            return path;
         }
 
         private void InitializeComponent()
         {
             this.SuspendLayout();
-            this.ClientSize = new System.Drawing.Size(1100, 700);
+            this.ClientSize = new System.Drawing.Size(1100, 600);
             this.Name = "FrmProgress";
             this.ResumeLayout(false);
         }

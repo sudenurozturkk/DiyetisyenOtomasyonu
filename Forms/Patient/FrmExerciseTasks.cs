@@ -1,293 +1,272 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
-using DevExpress.XtraGrid;
-using DevExpress.XtraGrid.Views.Grid;
-using DevExpress.XtraGrid.Columns;
 using DiyetisyenOtomasyonu.Domain;
-using DiyetisyenOtomasyonu.Infrastructure.Repositories;
+using DiyetisyenOtomasyonu.Infrastructure.Services;
 using DiyetisyenOtomasyonu.Infrastructure.Security;
 using DiyetisyenOtomasyonu.Shared;
 
 namespace DiyetisyenOtomasyonu.Forms.Patient
 {
-    /// <summary>
-    /// Egzersiz Görevlerim - Modern Hasta Paneli
-    /// </summary>
     public partial class FrmExerciseTasks : XtraForm
     {
-        private readonly ExerciseTaskRepository _repository;
-        private List<ExerciseTask> _tasks;
+        private readonly ExerciseService _exerciseService;
+        private XtraScrollableControl pnlTasks;
+        private LabelControl lblTotalTasks;
+        private LabelControl lblCompletedTasks;
+        private LabelControl lblCompletionRate;
 
-        // Modern Renkler - Yeşil Tema
-        private readonly Color PrimaryGreen = Color.FromArgb(13, 148, 136);
-        private readonly Color SuccessGreen = Color.FromArgb(34, 197, 94);
-        private readonly Color DangerRed = Color.FromArgb(239, 68, 68);
-        private readonly Color WarningOrange = Color.FromArgb(249, 115, 22);
-        private readonly Color InfoBlue = Color.FromArgb(59, 130, 246);
-        private readonly Color CardWhite = Color.White;
-        private readonly Color BackgroundLight = Color.FromArgb(248, 250, 252);
-        private readonly Color TextDark = Color.FromArgb(30, 41, 59);
-        private readonly Color TextMedium = Color.FromArgb(100, 116, 139);
-        private readonly Color BorderGray = Color.FromArgb(226, 232, 240);
-
-        // Controls
-        private GridControl gridTasks;
-        private GridView viewTasks;
-        private Label lblTotalTasks, lblCompletedTasks, lblPendingTasks, lblSuccessRate;
+        // Modern Renkler - UiStyles
+        private Color PrimaryColor => UiStyles.PrimaryColor;
+        private Color SuccessGreen => UiStyles.SuccessColor;
+        private Color InfoBlue => UiStyles.InfoColor;
+        private Color WarningOrange => UiStyles.WarningColor;
+        private Color DangerRed => UiStyles.DangerColor;
+        private Color CardColor => Color.White;
+        private Color BackgroundColor => Color.FromArgb(245, 247, 250);
+        private Color TextPrimary => UiStyles.TextPrimary;
+        private Color TextSecondary => UiStyles.TextSecondary;
 
         public FrmExerciseTasks()
         {
-            _repository = new ExerciseTaskRepository();
             InitializeComponent();
+            _exerciseService = new ExerciseService();
             SetupUI();
-            LoadData();
+            LoadTasks();
         }
 
         private void SetupUI()
         {
             this.Text = "Egzersiz Görevlerim";
+            this.BackColor = BackgroundColor;
             this.FormBorderStyle = FormBorderStyle.None;
-            this.BackColor = BackgroundLight;
-            this.Padding = new Padding(15);
+            this.Padding = new Padding(20);
 
             var mainLayout = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
+                RowCount = 2,
                 ColumnCount = 1,
-                RowCount = 3,
                 BackColor = Color.Transparent
             };
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 80));  // Header
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 120)); // Stats
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));  // Grid
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 120)); // Summary
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));  // Tasks
 
-            mainLayout.Controls.Add(CreateHeader(), 0, 0);
-            mainLayout.Controls.Add(CreateStatsSection(), 0, 1);
-            mainLayout.Controls.Add(CreateGridSection(), 0, 2);
+            // 1. Summary Panel
+            var summaryPanel = CreateSummaryPanel();
+            mainLayout.Controls.Add(summaryPanel, 0, 0);
+
+            // 2. Tasks List
+            pnlTasks = new XtraScrollableControl
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.Transparent
+            };
+            mainLayout.Controls.Add(pnlTasks, 0, 1);
 
             this.Controls.Add(mainLayout);
         }
 
-        private Panel CreateHeader()
+        private PanelControl CreateSummaryPanel()
         {
-            var panel = new Panel { Dock = DockStyle.Fill, BackColor = CardWhite, Padding = new Padding(20), Margin = new Padding(0, 0, 0, 15) };
-            panel.Paint += (s, e) => DrawRoundedBorder(e.Graphics, panel, 12);
-
-            var lblTitle = new Label
+            var panel = new PanelControl
             {
-                Text = "🏃 Egzersiz Görevlerim",
-                Font = new Font("Segoe UI", 16F, FontStyle.Bold),
-                ForeColor = TextDark,
-                Location = new Point(20, 15),
-                AutoSize = true
+                Dock = DockStyle.Fill,
+                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder,
+                BackColor = Color.Transparent
             };
-            panel.Controls.Add(lblTitle);
 
-            var lblSubtitle = new Label
-            {
-                Text = "Size atanan egzersizleri buradan takip edebilir ve tamamlayabilirsiniz.",
-                Font = new Font("Segoe UI", 10F),
-                ForeColor = TextMedium,
-                Location = new Point(22, 45),
-                AutoSize = true
-            };
-            panel.Controls.Add(lblSubtitle);
+            int cardWidth = 200;
+            int spacing = 20;
+
+            lblTotalTasks = CreateStatCard(panel, 0, 10, "Toplam Görev", "0", InfoBlue);
+            lblCompletedTasks = CreateStatCard(panel, cardWidth + spacing, 10, "Tamamlanan", "0", SuccessGreen);
+            lblCompletionRate = CreateStatCard(panel, 2 * (cardWidth + spacing), 10, "Başarı Oranı", "%0", WarningOrange);
 
             var btnRefresh = new SimpleButton
             {
-                Text = "YENİLE",
-                Location = new Point(panel.Width - 120, 25),
-                Size = new Size(100, 35),
+                Text = "Yenile",
+                Location = new Point(panel.Width - 120, 30),
+                Size = new Size(100, 40),
                 Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                Appearance = { BackColor = PrimaryGreen, ForeColor = Color.White }
+                Appearance = { BackColor = PrimaryColor, ForeColor = Color.White, Font = new Font("Segoe UI", 10F, FontStyle.Bold) }
             };
-            btnRefresh.Click += (s, e) => LoadData();
+            btnRefresh.Click += (s, e) => LoadTasks();
             panel.Controls.Add(btnRefresh);
 
             return panel;
         }
 
-        private Panel CreateStatsSection()
+        private LabelControl CreateStatCard(PanelControl parent, int x, int y, string title, string value, Color color)
         {
-            var panel = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Margin = new Padding(0, 0, 0, 15) };
-            
-            int cardWidth = 250;
-            int gap = 20;
-
-            CreateStatCard(panel, 0, "Toplam Görev", "0", InfoBlue, out lblTotalTasks);
-            CreateStatCard(panel, cardWidth + gap, "Tamamlanan", "0", SuccessGreen, out lblCompletedTasks);
-            CreateStatCard(panel, (cardWidth + gap) * 2, "Bekleyen", "0", WarningOrange, out lblPendingTasks);
-            CreateStatCard(panel, (cardWidth + gap) * 3, "Başarı Oranı", "%0", PrimaryGreen, out lblSuccessRate);
-
-            return panel;
-        }
-
-        private void CreateStatCard(Panel parent, int x, string title, string value, Color color, out Label lblValueRef)
-        {
-            var card = new Panel
+            var card = new PanelControl
             {
-                Location = new Point(x, 0),
-                Size = new Size(250, 100),
-                BackColor = CardWhite
+                Location = new Point(x, y),
+                Size = new Size(200, 80),
+                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder,
+                BackColor = CardColor
             };
-            card.Paint += (s, e) => DrawRoundedBorder(e.Graphics, card, 12, color);
 
-            var lblTitle = new Label
+            var border = new PanelControl
+            {
+                Dock = DockStyle.Left,
+                Width = 4,
+                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder,
+                BackColor = color
+            };
+            card.Controls.Add(border);
+
+            var lblTitle = new LabelControl
             {
                 Text = title,
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                ForeColor = TextMedium,
-                Location = new Point(20, 20),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = TextSecondary,
+                Location = new Point(15, 15),
                 AutoSize = true
             };
             card.Controls.Add(lblTitle);
 
-            var lblValue = new Label
+            var lblValue = new LabelControl
             {
                 Text = value,
-                Font = new Font("Segoe UI", 20F, FontStyle.Bold),
+                Font = new Font("Segoe UI", 18F, FontStyle.Bold),
                 ForeColor = color,
-                Location = new Point(20, 45),
+                Location = new Point(15, 35),
                 AutoSize = true
             };
             card.Controls.Add(lblValue);
-            lblValueRef = lblValue;
 
             parent.Controls.Add(card);
+            return lblValue;
         }
 
-        private Panel CreateGridSection()
+        private void LoadTasks()
         {
-            var panel = new Panel { Dock = DockStyle.Fill, BackColor = CardWhite, Padding = new Padding(10) };
-            panel.Paint += (s, e) => DrawRoundedBorder(e.Graphics, panel, 12);
+            pnlTasks.Controls.Clear();
+            var tasks = _exerciseService.GetPatientTasks(AuthContext.UserId);
 
-            gridTasks = new GridControl { Dock = DockStyle.Fill, LookAndFeel = { UseDefaultLookAndFeel = false, Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat } };
-            viewTasks = new GridView(gridTasks);
-            gridTasks.MainView = viewTasks;
+            // Update stats
+            lblTotalTasks.Text = tasks.Count.ToString();
+            int completed = tasks.Count(t => t.IsCompleted);
+            lblCompletedTasks.Text = completed.ToString();
+            lblCompletionRate.Text = tasks.Count > 0 ? $"%{(int)((double)completed / tasks.Count * 100)}" : "%0";
 
-            viewTasks.OptionsView.ShowGroupPanel = false;
-            viewTasks.OptionsView.ShowIndicator = false;
-            viewTasks.OptionsBehavior.Editable = true;
-            viewTasks.RowHeight = 45;
-            
-            viewTasks.Appearance.HeaderPanel.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            viewTasks.Appearance.HeaderPanel.BackColor = Color.FromArgb(241, 245, 249);
-            viewTasks.Appearance.HeaderPanel.ForeColor = TextDark;
-            viewTasks.Appearance.Row.Font = new Font("Segoe UI", 10F);
-
-            // Kolonlar
-            viewTasks.Columns.Add(new GridColumn { FieldName = "Title", Caption = "Egzersiz", Visible = true, Width = 200 });
-            viewTasks.Columns.Add(new GridColumn { FieldName = "DurationMinutes", Caption = "Süre (dk)", Visible = true, Width = 80 });
-            viewTasks.Columns.Add(new GridColumn { FieldName = "DifficultyText", Caption = "Zorluk", Visible = true, Width = 80 });
-            viewTasks.Columns.Add(new GridColumn { FieldName = "DueDate", Caption = "Tarih", Visible = true, Width = 100 });
-            viewTasks.Columns["DueDate"].DisplayFormat.FormatString = "dd.MM.yyyy";
-
-            var colStatus = viewTasks.Columns.Add();
-            colStatus.FieldName = "IsCompleted";
-            colStatus.Caption = "Tamamlandı";
-            colStatus.Visible = true;
-            colStatus.Width = 100;
-            var checkEdit = new DevExpress.XtraEditors.Repository.RepositoryItemCheckEdit();
-            checkEdit.CheckBoxOptions.Style = DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgCheckBox1;
-            colStatus.ColumnEdit = checkEdit;
-
-            // Sadece Checkbox düzenlenebilir
-            viewTasks.ShowingEditor += (s, e) =>
+            if (tasks.Count == 0)
             {
-                if (viewTasks.FocusedColumn.FieldName != "IsCompleted")
-                    e.Cancel = true;
+                var lbl = new LabelControl { Text = "Henüz atanmış egzersiz görevi bulunmuyor.", Location = new Point(20, 20) };
+                pnlTasks.Controls.Add(lbl);
+                return;
+            }
+
+            int y = 0;
+            foreach (var task in tasks.OrderBy(t => t.IsCompleted).ThenBy(t => t.DueDate))
+            {
+                var card = CreateTaskCard(task);
+                card.Location = new Point(0, y);
+                card.Width = pnlTasks.Width - 20;
+                pnlTasks.Controls.Add(card);
+                y += card.Height + 15;
+            }
+        }
+
+        private PanelControl CreateTaskCard(ExerciseTask task)
+        {
+            var card = new PanelControl
+            {
+                Height = 100,
+                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder,
+                BackColor = task.IsCompleted ? Color.FromArgb(245, 245, 245) : CardColor,
+                Padding = new Padding(15)
             };
 
-            viewTasks.CellValueChanged += ViewTasks_CellValueChanged;
-
-            panel.Controls.Add(gridTasks);
-            return panel;
-        }
-
-        private void ViewTasks_CellValueChanged(object sender, DevExpress.XtraGrid.Views.Base.CellValueChangedEventArgs e)
-        {
-            if (e.Column.FieldName == "IsCompleted")
+            // Status Icon
+            var lblIcon = new LabelControl
             {
-                var task = viewTasks.GetRow(e.RowHandle) as ExerciseTask;
-                if (task != null)
+                Text = task.IsCompleted ? "✅" : "🏃",
+                Font = new Font("Segoe UI", 20F),
+                Location = new Point(15, 30),
+                AutoSize = true
+            };
+            card.Controls.Add(lblIcon);
+
+            // Title & Desc
+            var lblTitle = new LabelControl
+            {
+                Text = task.Title,
+                Font = new Font("Segoe UI", 12F, task.IsCompleted ? FontStyle.Strikeout : FontStyle.Bold),
+                ForeColor = task.IsCompleted ? TextSecondary : TextPrimary,
+                Location = new Point(60, 20),
+                AutoSize = true
+            };
+            card.Controls.Add(lblTitle);
+
+            var lblDesc = new LabelControl
+            {
+                Text = $"{task.DurationMinutes} dk | {GetDifficultyText(task.DifficultyLevel)}",
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = TextSecondary,
+                Location = new Point(60, 50),
+                AutoSize = true
+            };
+            card.Controls.Add(lblDesc);
+
+            // Action Button (if not completed)
+            if (!task.IsCompleted)
+            {
+                var btnComplete = new SimpleButton
                 {
-                    try
-                    {
-                        _repository.UpdateStatus(task.Id, task.IsCompleted);
-                        UpdateStats();
-                        ToastNotification.ShowSuccess(task.IsCompleted ? "Egzersiz tamamlandı! 💪" : "Egzersiz durumu güncellendi.");
-                    }
-                    catch (Exception ex)
-                    {
-                        ToastNotification.ShowError("Hata: " + ex.Message);
-                    }
-                }
+                    Text = "Tamamla",
+                    Location = new Point(card.Width - 120, 30),
+                    Size = new Size(100, 40),
+                    Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                    Appearance = { BackColor = SuccessGreen, ForeColor = Color.White, Font = new Font("Segoe UI", 9F, FontStyle.Bold) }
+                };
+                btnComplete.Click += (s, e) => {
+                    _exerciseService.CompleteTask(task.Id);
+                    LoadTasks();
+                };
+                card.Controls.Add(btnComplete);
             }
-        }
-
-        private void LoadData()
-        {
-            try
+            else
             {
-                _tasks = _repository.GetByPatient(AuthContext.UserId).OrderByDescending(t => t.DueDate).ToList();
-                gridTasks.DataSource = new System.ComponentModel.BindingList<ExerciseTask>(_tasks);
-                UpdateStats();
+                var lblDate = new LabelControl
+                {
+                    Text = $"Tamamlandı: {task.CompletedAt?.ToString("dd.MM.yyyy")}",
+                    Font = new Font("Segoe UI", 9F, FontStyle.Italic),
+                    ForeColor = SuccessGreen,
+                    Location = new Point(card.Width - 150, 40),
+                    Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                    AutoSize = true
+                };
+                card.Controls.Add(lblDate);
             }
-            catch (Exception ex)
+
+            // Resize handler
+            card.Resize += (s, e) => {
+                // Button location update handled by Anchor
+            };
+
+            return card;
+        }
+
+        private string GetDifficultyText(int level)
+        {
+            switch (level)
             {
-                ToastNotification.ShowError("Veriler yüklenirken hata: " + ex.Message);
+                case 1: return "Kolay";
+                case 2: return "Orta";
+                case 3: return "Zor";
+                default: return "Normal";
             }
-        }
-
-        private void UpdateStats()
-        {
-            if (_tasks == null) return;
-
-            int total = _tasks.Count;
-            int completed = _tasks.Count(t => t.IsCompleted);
-            int pending = total - completed;
-            double rate = total > 0 ? (double)completed / total * 100 : 0;
-
-            lblTotalTasks.Text = total.ToString();
-            lblCompletedTasks.Text = completed.ToString();
-            lblPendingTasks.Text = pending.ToString();
-            lblSuccessRate.Text = $"%{rate:F0}";
-        }
-
-        private void DrawRoundedBorder(Graphics g, Panel panel, int radius, Color? borderColor = null)
-        {
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            using (var path = CreateRoundedRect(new Rectangle(0, 0, panel.Width - 1, panel.Height - 1), radius))
-            using (var brush = new SolidBrush(panel.BackColor))
-            using (var pen = new Pen(borderColor ?? BorderGray, 1))
-            {
-                g.FillPath(brush, path);
-                g.DrawPath(pen, path);
-            }
-        }
-
-        private GraphicsPath CreateRoundedRect(Rectangle rect, int radius)
-        {
-            var path = new GraphicsPath();
-            int d = radius * 2;
-            path.AddArc(rect.X, rect.Y, d, d, 180, 90);
-            path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90);
-            path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
-            path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
-            path.CloseFigure();
-            return path;
         }
 
         private void InitializeComponent()
         {
             this.SuspendLayout();
-            this.ClientSize = new System.Drawing.Size(1150, 700);
+            this.ClientSize = new System.Drawing.Size(1100, 600);
             this.Name = "FrmExerciseTasks";
             this.ResumeLayout(false);
         }

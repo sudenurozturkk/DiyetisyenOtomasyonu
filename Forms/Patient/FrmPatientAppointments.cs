@@ -5,347 +5,431 @@ using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
-using DevExpress.XtraGrid;
-using DevExpress.XtraGrid.Views.Grid;
+using DevExpress.XtraEditors.Controls;
 using DiyetisyenOtomasyonu.Domain;
+using DiyetisyenOtomasyonu.Infrastructure.Services;
 using DiyetisyenOtomasyonu.Infrastructure.Repositories;
 using DiyetisyenOtomasyonu.Infrastructure.Security;
 using DiyetisyenOtomasyonu.Shared;
 
 namespace DiyetisyenOtomasyonu.Forms.Patient
 {
-    /// <summary>
-    /// Randevu Talep ve Görüntüleme Formu - Hasta için
-    /// Modern ve temiz tasarım
-    /// </summary>
     public partial class FrmPatientAppointments : XtraForm
     {
-        private readonly AppointmentRepository _repository;
-        private readonly PatientRepository _patientRepository;
+        private readonly AppointmentService _appointmentService;
+        private readonly PatientRepository _patientRepo;
+        private XtraScrollableControl pnlAppointments;
+        private ComboBoxEdit cmbFilter;
 
-        private GridControl grdAppointments;
-        private GridView grdView;
-        private DateEdit dtDate;
-        private TimeEdit dtTime;
-        private ComboBoxEdit cmbType;
-        private MemoEdit txtNotes;
-        private Label lblUpcoming;
-
-        // Modern Renkler
-        private readonly Color PrimaryGreen = Color.FromArgb(13, 148, 136);
-        private readonly Color SuccessGreen = Color.FromArgb(34, 197, 94);
-        private readonly Color WarningOrange = Color.FromArgb(249, 115, 22);
-        private readonly Color DangerRed = Color.FromArgb(239, 68, 68);
-        private readonly Color InfoBlue = Color.FromArgb(59, 130, 246);
-        private readonly Color CardWhite = Color.White;
-        private readonly Color BackgroundLight = Color.FromArgb(248, 250, 252);
-        private readonly Color TextDark = Color.FromArgb(30, 41, 59);
-        private readonly Color TextMedium = Color.FromArgb(100, 116, 139);
-        private readonly Color BorderGray = Color.FromArgb(226, 232, 240);
+        // Modern Renkler - UiStyles
+        private Color PrimaryColor => UiStyles.PrimaryColor;
+        private Color SuccessGreen => UiStyles.SuccessColor;
+        private Color InfoBlue => UiStyles.InfoColor;
+        private Color WarningOrange => UiStyles.WarningColor;
+        private Color DangerRed => UiStyles.DangerColor;
+        private Color CardColor => Color.White;
+        private Color BackgroundColor => Color.FromArgb(245, 247, 250);
+        private Color TextPrimary => UiStyles.TextPrimary;
+        private Color TextSecondary => UiStyles.TextSecondary;
 
         public FrmPatientAppointments()
         {
-            _repository = new AppointmentRepository();
-            _patientRepository = new PatientRepository();
             InitializeComponent();
-            LoadData();
+            _appointmentService = new AppointmentService();
+            _patientRepo = new PatientRepository();
+            SetupUI();
+            LoadAppointments();
+        }
+
+        private void SetupUI()
+        {
+            this.Text = "Randevularım";
+            this.BackColor = BackgroundColor;
+            this.FormBorderStyle = FormBorderStyle.None;
+            this.Padding = new Padding(20);
+
+            var mainLayout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 2,
+                ColumnCount = 1,
+                BackColor = Color.Transparent
+            };
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 60)); // Header
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));  // List
+
+            // 1. Header
+            var headerPanel = CreateHeaderPanel();
+            mainLayout.Controls.Add(headerPanel, 0, 0);
+
+            // 2. Appointments List
+            pnlAppointments = new XtraScrollableControl
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.Transparent
+            };
+            mainLayout.Controls.Add(pnlAppointments, 0, 1);
+
+            this.Controls.Add(mainLayout);
+        }
+
+        private PanelControl CreateHeaderPanel()
+        {
+            var panel = new PanelControl
+            {
+                Dock = DockStyle.Fill,
+                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder,
+                BackColor = Color.Transparent
+            };
+
+            var lblTitle = new LabelControl
+            {
+                Text = "📅 Randevularım",
+                Font = new Font("Segoe UI", 16F, FontStyle.Bold),
+                ForeColor = TextPrimary,
+                Location = new Point(0, 10),
+                AutoSize = true
+            };
+            panel.Controls.Add(lblTitle);
+
+            // Randevu Talep Et Butonu
+            var btnRequest = new SimpleButton
+            {
+                Text = "➕ Randevu Talep Et",
+                Location = new Point(panel.Width - 360, 12),
+                Size = new Size(150, 32),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+            btnRequest.Appearance.BackColor = SuccessGreen;
+            btnRequest.Appearance.ForeColor = Color.White;
+            btnRequest.Appearance.Options.UseBackColor = true;
+            btnRequest.Appearance.Options.UseForeColor = true;
+            btnRequest.Click += BtnRequest_Click;
+            panel.Controls.Add(btnRequest);
+
+            cmbFilter = new ComboBoxEdit
+            {
+                Location = new Point(panel.Width - 200, 13),
+                Size = new Size(190, 30),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                Properties = { TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor }
+            };
+            cmbFilter.Properties.Items.AddRange(new[] { "Gelecek Randevular", "Geçmiş Randevular", "Tümü" });
+            cmbFilter.SelectedIndex = 0;
+            cmbFilter.SelectedIndexChanged += (s, e) => LoadAppointments();
+            panel.Controls.Add(cmbFilter);
+
+            return panel;
+        }
+
+        private void BtnRequest_Click(object sender, EventArgs e)
+        {
+            using (var form = new XtraForm())
+            {
+                form.Text = "Randevu Talep Et";
+                form.Size = new Size(400, 350);
+                form.StartPosition = FormStartPosition.CenterParent;
+                form.BackColor = BackgroundColor;
+
+                var layout = new TableLayoutPanel
+                {
+                    Dock = DockStyle.Fill,
+                    Padding = new Padding(20),
+                    RowCount = 5,
+                    ColumnCount = 1,
+                    BackColor = Color.Transparent
+                };
+                
+                // Tarih Seçimi
+                layout.Controls.Add(new LabelControl { Text = "Tarih ve Saat:", Font = new Font("Segoe UI", 10F, FontStyle.Bold) });
+                var dtDate = new DateEdit { Properties = { CalendarView = DevExpress.XtraEditors.Repository.CalendarView.TouchUI, Mask = { EditMask = "g", UseMaskAsDisplayFormat = true } } };
+                dtDate.DateTime = DateTime.Now.AddDays(1).Date.AddHours(9); // Yarın sabah 9
+                dtDate.Dock = DockStyle.Top;
+                layout.Controls.Add(dtDate);
+
+                // Tür Seçimi
+                layout.Controls.Add(new LabelControl { Text = "Randevu Türü:", Font = new Font("Segoe UI", 10F, FontStyle.Bold), Padding = new Padding(0, 10, 0, 0) });
+                var rgType = new RadioGroup();
+                rgType.Properties.Items.Add(new DevExpress.XtraEditors.Controls.RadioGroupItem(AppointmentType.Online, "Online Görüşme"));
+                rgType.Properties.Items.Add(new DevExpress.XtraEditors.Controls.RadioGroupItem(AppointmentType.Clinic, "Klinik Muayene"));
+                rgType.SelectedIndex = 0;
+                rgType.Dock = DockStyle.Top;
+                rgType.Height = 60;
+                layout.Controls.Add(rgType);
+
+                // Not
+                layout.Controls.Add(new LabelControl { Text = "Notunuz (Opsiyonel):", Font = new Font("Segoe UI", 10F, FontStyle.Bold), Padding = new Padding(0, 10, 0, 0) });
+                var txtNote = new MemoEdit { Height = 60, Dock = DockStyle.Top };
+                layout.Controls.Add(txtNote);
+
+                // Buton
+                var btnSend = new SimpleButton
+                {
+                    Text = "Talebi Gönder",
+                    Height = 40,
+                    Dock = DockStyle.Bottom,
+                    Font = new Font("Segoe UI", 10F, FontStyle.Bold)
+                };
+                btnSend.Appearance.BackColor = PrimaryColor;
+                btnSend.Appearance.ForeColor = Color.White;
+                btnSend.Appearance.Options.UseBackColor = true;
+                btnSend.Appearance.Options.UseForeColor = true;
+                btnSend.Click += (s, args) =>
+                {
+                    if (dtDate.DateTime <= DateTime.Now)
+                    {
+                        XtraMessageBox.Show("Geçmiş bir tarihe randevu alamazsınız.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    try
+                    {
+                        // Hastanın doktorunu bul
+                        var patient = _patientRepo.GetById(AuthContext.UserId);
+                        if (patient == null || patient.DoctorId <= 0)
+                        {
+                            XtraMessageBox.Show("Size atanmış bir doktor bulunamadı. Lütfen doktorunuzla iletişime geçin.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return;
+                        }
+
+                        var app = new Appointment
+                        {
+                            PatientId = AuthContext.UserId,
+                            DoctorId = patient.DoctorId, // Hastanın doktoru
+                            DateTime = dtDate.DateTime,
+                            Type = (AppointmentType)rgType.EditValue,
+                            Status = AppointmentStatus.Pending,
+                            Notes = txtNote.Text,
+                            CreatedAt = DateTime.Now
+                        };
+
+                        var repo = new DiyetisyenOtomasyonu.Infrastructure.Repositories.AppointmentRepository();
+                        repo.Add(app);
+
+                        XtraMessageBox.Show("Randevu talebiniz iletildi! Doktorunuz onayladığında bildirim alacaksınız.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        form.Close();
+                        LoadAppointments();
+                    }
+                    catch (Exception ex)
+                    {
+                        XtraMessageBox.Show("Hata: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                };
+                layout.Controls.Add(btnSend);
+
+                form.Controls.Add(layout);
+                form.ShowDialog();
+            }
+        }
+
+        private void LoadAppointments()
+        {
+            pnlAppointments.Controls.Clear();
+            var appointments = _appointmentService.GetPatientAppointments(AuthContext.UserId);
+
+            // Filter
+            if (cmbFilter.SelectedIndex == 0) // Gelecek
+                appointments = appointments.Where(a => a.DateTime >= DateTime.Now).ToList();
+            else if (cmbFilter.SelectedIndex == 1) // Geçmiş
+                appointments = appointments.Where(a => a.DateTime < DateTime.Now).ToList();
+
+            if (!appointments.Any())
+            {
+                var lbl = new LabelControl { Text = "Randevu bulunamadı.", Location = new Point(20, 20) };
+                pnlAppointments.Controls.Add(lbl);
+                return;
+            }
+
+            int y = 0;
+            foreach (var app in appointments.OrderBy(a => a.DateTime))
+            {
+                var card = CreateAppointmentCard(app);
+                card.Location = new Point(0, y);
+                card.Width = pnlAppointments.Width - 20;
+                pnlAppointments.Controls.Add(card);
+                y += card.Height + 15;
+            }
+        }
+
+        private PanelControl CreateAppointmentCard(Appointment app)
+        {
+            var card = new PanelControl
+            {
+                Height = 100,
+                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder,
+                BackColor = CardColor,
+                Padding = new Padding(0),
+                Margin = new Padding(0, 0, 0, 15)
+            };
+
+            // Sol kenar çubuğu
+            var leftBar = new PanelControl
+            {
+                Dock = DockStyle.Left,
+                Width = 6,
+                BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder,
+                BackColor = GetStatusColor(app.Status)
+            };
+            card.Controls.Add(leftBar);
+
+            // Layout
+            var layout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 4,
+                RowCount = 1,
+                BackColor = Color.Transparent,
+                Padding = new Padding(10)
+            };
+            // Tarih (20%), Saat/Tip (30%), Doktor/Durum (30%), Aksiyon (20%)
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
+
+            // 1. Tarih Kutusu
+            var datePanel = new PanelControl { BorderStyle = BorderStyles.NoBorder, BackColor = Color.Transparent, Dock = DockStyle.Fill };
+            var lblDay = new LabelControl
+            {
+                Text = app.DateTime.Day.ToString(),
+                Font = new Font("Segoe UI", 20F, FontStyle.Bold),
+                ForeColor = GetStatusColor(app.Status),
+                Dock = DockStyle.Top,
+                Appearance = { TextOptions = { HAlignment = DevExpress.Utils.HorzAlignment.Center } }
+            };
+            var lblMonth = new LabelControl
+            {
+                Text = app.DateTime.ToString("MMM").ToUpper(),
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                ForeColor = Color.Gray,
+                Dock = DockStyle.Top,
+                Appearance = { TextOptions = { HAlignment = DevExpress.Utils.HorzAlignment.Center } }
+            };
+            datePanel.Controls.Add(lblMonth);
+            datePanel.Controls.Add(lblDay);
+            layout.Controls.Add(datePanel, 0, 0);
+
+            // 2. Saat ve Tip
+            var timePanel = new PanelControl { BorderStyle = BorderStyles.NoBorder, BackColor = Color.Transparent, Dock = DockStyle.Fill };
+            var lblTime = new LabelControl
+            {
+                Text = app.DateTime.ToString("HH:mm"),
+                Font = new Font("Segoe UI", 14F, FontStyle.Bold),
+                ForeColor = TextPrimary,
+                Location = new Point(0, 10)
+            };
+            var lblType = new LabelControl
+            {
+                Text = app.Type == AppointmentType.Online ? "🖥️ Online" : "🏥 Klinik",
+                Font = new Font("Segoe UI", 10F),
+                ForeColor = TextSecondary,
+                Location = new Point(0, 40)
+            };
+            timePanel.Controls.Add(lblTime);
+            timePanel.Controls.Add(lblType);
+            layout.Controls.Add(timePanel, 1, 0);
+
+            // 3. Doktor ve Durum
+            var statusPanel = new PanelControl { BorderStyle = BorderStyles.NoBorder, BackColor = Color.Transparent, Dock = DockStyle.Fill };
+            var lblDoc = new LabelControl
+            {
+                Text = "Dr. Diyetisyen",
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                ForeColor = TextPrimary,
+                Location = new Point(0, 15)
+            };
+            var lblStatus = new LabelControl
+            {
+                Text = GetStatusText(app.Status),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = Color.White,
+                Appearance = { BackColor = GetStatusColor(app.Status) },
+                Padding = new Padding(5, 2, 5, 2),
+                Location = new Point(0, 40)
+            };
+            statusPanel.Controls.Add(lblDoc);
+            statusPanel.Controls.Add(lblStatus);
+            layout.Controls.Add(statusPanel, 2, 0);
+
+            // 4. Aksiyon Butonu
+            if (app.DateTime > DateTime.Now && app.Status == AppointmentStatus.Scheduled)
+            {
+                var btnCancel = new SimpleButton
+                {
+                    Text = "İptal",
+                    Size = new Size(80, 35),
+                    Anchor = AnchorStyles.Right,
+                    Font = new Font("Segoe UI", 9F)
+                };
+                btnCancel.Appearance.BackColor = DangerRed;
+                btnCancel.Appearance.ForeColor = Color.White;
+                btnCancel.Appearance.Options.UseBackColor = true;
+                btnCancel.Appearance.Options.UseForeColor = true;
+                btnCancel.Click += (s, e) => {
+                    if (XtraMessageBox.Show("Randevuyu iptal etmek istediğinize emin misiniz?", "Onay", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                    {
+                        _appointmentService.UpdateStatus(app.Id, AppointmentStatus.Cancelled);
+                        LoadAppointments();
+                    }
+                };
+                layout.Controls.Add(btnCancel, 3, 0);
+            }
+            else if (app.Status == AppointmentStatus.Pending)
+            {
+                var lblPending = new LabelControl
+                {
+                    Text = "⏳ Onay Bekliyor",
+                    Font = new Font("Segoe UI", 9F, FontStyle.Italic),
+                    ForeColor = WarningOrange,
+                    Anchor = AnchorStyles.Right
+                };
+                layout.Controls.Add(lblPending, 3, 0);
+            }
+
+            card.Controls.Add(layout);
+
+            // Alt çizgi
+            var line = new PanelControl
+            {
+                Dock = DockStyle.Bottom,
+                Height = 1,
+                BorderStyle = BorderStyles.NoBorder,
+                BackColor = Color.FromArgb(240, 240, 240)
+            };
+            card.Controls.Add(line);
+
+            return card;
+        }
+
+        private string GetStatusText(AppointmentStatus status)
+        {
+            switch (status)
+            {
+                case AppointmentStatus.Scheduled: return "Planlandı";
+                case AppointmentStatus.Completed: return "Tamamlandı";
+                case AppointmentStatus.Cancelled: return "İptal Edildi";
+                default: return status.ToString();
+            }
+        }
+
+        private Color GetStatusColor(AppointmentStatus status)
+        {
+            switch (status)
+            {
+                case AppointmentStatus.Scheduled: return InfoBlue;
+                case AppointmentStatus.Completed: return SuccessGreen;
+                case AppointmentStatus.Cancelled: return DangerRed;
+                default: return Color.Gray;
+            }
         }
 
         private void InitializeComponent()
         {
             this.SuspendLayout();
-            this.ClientSize = new Size(1000, 600);
-            this.Text = "Randevularım";
-            this.BackColor = BackgroundLight;
-            this.FormBorderStyle = FormBorderStyle.None;
-            this.Padding = new Padding(15);
-
-            // Ana Container - 2 satırlı layout
-            var mainLayout = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                ColumnCount = 1,
-                RowCount = 2,
-                BackColor = Color.Transparent
-            };
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 180)); // Üst: talep formu
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));  // Alt: randevu listesi
-
-            // Üst Panel - Randevu Talebi
-            var topPanel = CreateRequestPanel();
-            mainLayout.Controls.Add(topPanel, 0, 0);
-
-            // Alt Panel - Randevu Listesi
-            var bottomPanel = CreateAppointmentsPanel();
-            mainLayout.Controls.Add(bottomPanel, 0, 1);
-
-            this.Controls.Add(mainLayout);
+            this.ClientSize = new System.Drawing.Size(1100, 600);
+            this.Name = "FrmPatientAppointments";
             this.ResumeLayout(false);
-        }
-
-        private Panel CreateRequestPanel()
-        {
-            var panel = new Panel { Dock = DockStyle.Fill, BackColor = CardWhite, Padding = new Padding(20) };
-            panel.Paint += (s, e) => DrawRoundedBorder(e.Graphics, panel, 12);
-
-            // Başlık
-            var lblTitle = new Label
-            {
-                Text = "📅 Yeni Randevu Talebi",
-                Font = new Font("Segoe UI", 14F, FontStyle.Bold),
-                ForeColor = PrimaryGreen,
-                Location = new Point(20, 15),
-                AutoSize = true
-            };
-            panel.Controls.Add(lblTitle);
-
-            // Form satırı 1
-            int y = 55;
-
-            // Tarih
-            var lblDate = new Label { Text = "Tarih:", Font = new Font("Segoe UI", 10F), ForeColor = TextMedium, Location = new Point(20, y), AutoSize = true };
-            panel.Controls.Add(lblDate);
-            dtDate = new DateEdit { Location = new Point(70, y - 3), Size = new Size(130, 30) };
-            dtDate.DateTime = DateTime.Today.AddDays(1);
-            dtDate.Properties.MinValue = DateTime.Today;
-            panel.Controls.Add(dtDate);
-
-            // Saat
-            var lblTime = new Label { Text = "Saat:", Font = new Font("Segoe UI", 10F), ForeColor = TextMedium, Location = new Point(220, y), AutoSize = true };
-            panel.Controls.Add(lblTime);
-            dtTime = new TimeEdit { Location = new Point(270, y - 3), Size = new Size(100, 30) };
-            dtTime.Time = new DateTime(2000, 1, 1, 10, 0, 0);
-            panel.Controls.Add(dtTime);
-
-            // Tür
-            var lblType = new Label { Text = "Tür:", Font = new Font("Segoe UI", 10F), ForeColor = TextMedium, Location = new Point(390, y), AutoSize = true };
-            panel.Controls.Add(lblType);
-            cmbType = new ComboBoxEdit { Location = new Point(430, y - 3), Size = new Size(130, 30) };
-            cmbType.Properties.Items.AddRange(new[] { "🌐 Online", "🏥 Klinik" });
-            cmbType.SelectedIndex = 0;
-            panel.Controls.Add(cmbType);
-
-            // Randevu Talep Et butonu
-            var btnRequest = new SimpleButton
-            {
-                Text = "📩 Randevu Talep Et",
-                Location = new Point(580, y - 5),
-                Size = new Size(180, 35),
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                Appearance = { BackColor = PrimaryGreen, ForeColor = Color.White }
-            };
-            btnRequest.Click += BtnRequest_Click;
-            panel.Controls.Add(btnRequest);
-
-            // Not
-            y += 45;
-            var lblNote = new Label { Text = "Not:", Font = new Font("Segoe UI", 10F), ForeColor = TextMedium, Location = new Point(20, y), AutoSize = true };
-            panel.Controls.Add(lblNote);
-            txtNotes = new MemoEdit
-            {
-                Location = new Point(70, y - 3),
-                Size = new Size(500, 50),
-                Properties = { MaxLength = 300 }
-            };
-            txtNotes.Properties.NullValuePrompt = "Randevu sebebi veya notunuz (isteğe bağlı)...";
-            panel.Controls.Add(txtNotes);
-
-            return panel;
-        }
-
-        private Panel CreateAppointmentsPanel()
-        {
-            var panel = new Panel { Dock = DockStyle.Fill, BackColor = CardWhite, Padding = new Padding(20), Margin = new Padding(0, 10, 0, 0) };
-            panel.Paint += (s, e) => DrawRoundedBorder(e.Graphics, panel, 12);
-
-            // Başlık Satırı
-            var header = new Panel { Dock = DockStyle.Top, Height = 45, BackColor = Color.Transparent };
-
-            var lblTitle = new Label
-            {
-                Text = "📋 Randevularım",
-                Font = new Font("Segoe UI", 14F, FontStyle.Bold),
-                ForeColor = TextDark,
-                Location = new Point(5, 8),
-                AutoSize = true
-            };
-            header.Controls.Add(lblTitle);
-
-            lblUpcoming = new Label
-            {
-                Text = "⏳ Yükleniyor...",
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                ForeColor = SuccessGreen,
-                Location = new Point(200, 12),
-                AutoSize = true
-            };
-            header.Controls.Add(lblUpcoming);
-
-            var btnRefresh = new SimpleButton
-            {
-                Text = "↻ Yenile",
-                Location = new Point(400, 5),
-                Size = new Size(90, 32),
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                Appearance = { BackColor = InfoBlue, ForeColor = Color.White }
-            };
-            btnRefresh.Click += (s, e) => LoadData();
-            header.Controls.Add(btnRefresh);
-
-            panel.Controls.Add(header);
-
-            // Grid
-            grdAppointments = new GridControl { Dock = DockStyle.Fill };
-            grdView = new GridView(grdAppointments);
-            grdAppointments.MainView = grdView;
-
-            grdView.OptionsBehavior.Editable = false;
-            grdView.OptionsView.ShowGroupPanel = false;
-            grdView.OptionsView.ShowIndicator = false;
-            grdView.OptionsSelection.EnableAppearanceFocusedCell = false;
-            grdView.RowHeight = 40;
-            grdView.Appearance.HeaderPanel.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            grdView.Appearance.HeaderPanel.ForeColor = TextDark;
-            grdView.Appearance.HeaderPanel.BackColor = Color.FromArgb(241, 245, 249);
-            grdView.Appearance.Row.Font = new Font("Segoe UI", 10F);
-
-            grdView.Columns.AddVisible("DateTime", "Tarih / Saat").Width = 180;
-            grdView.Columns.AddVisible("TypeText", "Tür").Width = 120;
-            grdView.Columns.AddVisible("StatusText", "Durum").Width = 130;
-            grdView.Columns.AddVisible("Notes", "Not").Width = 280;
-
-            // Durum renklerini ayarla
-            grdView.RowCellStyle += (s, e) =>
-            {
-                if (e.Column.FieldName == "StatusText" && e.RowHandle >= 0)
-                {
-                    var apt = grdView.GetRow(e.RowHandle) as Appointment;
-                    if (apt != null)
-                    {
-                        switch (apt.Status)
-                        {
-                            case AppointmentStatus.Pending:
-                                e.Appearance.ForeColor = WarningOrange;
-                                e.Appearance.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-                                break;
-                            case AppointmentStatus.Approved:
-                                e.Appearance.ForeColor = SuccessGreen;
-                                e.Appearance.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-                                break;
-                            case AppointmentStatus.Cancelled:
-                                e.Appearance.ForeColor = DangerRed;
-                                e.Appearance.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-                                break;
-                            case AppointmentStatus.Completed:
-                                e.Appearance.ForeColor = InfoBlue;
-                                e.Appearance.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-                                break;
-                        }
-                    }
-                }
-            };
-
-            panel.Controls.Add(grdAppointments);
-
-            return panel;
-        }
-
-        private void LoadData()
-        {
-            try
-            {
-                var appointments = _repository.GetByPatient(AuthContext.UserId);
-                grdAppointments.DataSource = appointments.OrderByDescending(a => a.DateTime).ToList();
-
-                // Yaklaşan randevu sayısı
-                var upcomingCount = appointments.Count(a => a.Status == AppointmentStatus.Approved && a.DateTime > DateTime.Now);
-                var pendingCount = appointments.Count(a => a.Status == AppointmentStatus.Pending);
-
-                if (upcomingCount > 0)
-                    lblUpcoming.Text = $"✅ {upcomingCount} onaylı randevu";
-                else if (pendingCount > 0)
-                    lblUpcoming.Text = $"⏳ {pendingCount} bekleyen talep";
-                else
-                    lblUpcoming.Text = "📭 Randevu yok";
-            }
-            catch (Exception ex)
-            {
-                lblUpcoming.Text = "❌ Yüklenemedi";
-                System.Diagnostics.Debug.WriteLine("LoadData error: " + ex.Message);
-            }
-        }
-
-        private void BtnRequest_Click(object sender, EventArgs e)
-        {
-            var patient = _patientRepository.GetById(AuthContext.UserId);
-            if (patient == null)
-            {
-                ToastNotification.ShowError("Hasta bilgisi bulunamadı.");
-                return;
-            }
-
-            var requestedDateTime = dtDate.DateTime.Date + dtTime.Time.TimeOfDay;
-
-            if (requestedDateTime < DateTime.Now)
-            {
-                ToastNotification.ShowWarning("Geçmiş bir tarih için randevu talep edemezsiniz.");
-                return;
-            }
-
-            var existingAppointments = _repository.GetByPatient(AuthContext.UserId);
-            if (existingAppointments.Any(a => a.DateTime == requestedDateTime && a.Status != AppointmentStatus.Cancelled))
-            {
-                ToastNotification.ShowWarning("Bu tarih/saatte zaten bir randevunuz var.");
-                return;
-            }
-
-            var appointment = new Appointment
-            {
-                PatientId = AuthContext.UserId,
-                DoctorId = patient.DoctorId,
-                DateTime = requestedDateTime,
-                Type = cmbType.SelectedIndex == 0 ? AppointmentType.Online : AppointmentType.Clinic,
-                Status = AppointmentStatus.Pending,
-                Notes = txtNotes.Text,
-                CreatedAt = DateTime.Now
-            };
-
-            _repository.Add(appointment);
-            ToastNotification.ShowSuccess("Randevu talebiniz gönderildi!");
-            ClearInputs();
-            LoadData();
-        }
-
-        private void ClearInputs()
-        {
-            dtDate.DateTime = DateTime.Today.AddDays(1);
-            dtTime.Time = new DateTime(2000, 1, 1, 10, 0, 0);
-            cmbType.SelectedIndex = 0;
-            txtNotes.Text = "";
-        }
-
-        private void DrawRoundedBorder(Graphics g, Panel panel, int radius)
-        {
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            using (var path = CreateRoundedRect(new Rectangle(0, 0, panel.Width - 1, panel.Height - 1), radius))
-            using (var brush = new SolidBrush(panel.BackColor))
-            using (var pen = new Pen(BorderGray, 1))
-            {
-                g.FillPath(brush, path);
-                g.DrawPath(pen, path);
-            }
-        }
-
-        private GraphicsPath CreateRoundedRect(Rectangle rect, int radius)
-        {
-            var path = new GraphicsPath();
-            int d = radius * 2;
-            path.AddArc(rect.X, rect.Y, d, d, 180, 90);
-            path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90);
-            path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
-            path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
-            path.CloseFigure();
-            return path;
         }
     }
 }
