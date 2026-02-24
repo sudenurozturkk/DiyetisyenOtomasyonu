@@ -14,6 +14,7 @@ using DiyetisyenOtomasyonu.Infrastructure.Services;
 using DiyetisyenOtomasyonu.Infrastructure.Repositories;
 using DiyetisyenOtomasyonu.Infrastructure.Security;
 using DiyetisyenOtomasyonu.Shared;
+using DiyetisyenOtomasyonu.Infrastructure.Configuration;
 using DiyetisyenOtomasyonu.Infrastructure.DI;
 
 namespace DiyetisyenOtomasyonu.Forms.Doctor
@@ -66,10 +67,7 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
             _goalService = container.GetService<GoalService>();
             _patientService = container.GetService<PatientService>();
             
-            string apiKey = Environment.GetEnvironmentVariable("OPENROUTER_API_KEY");
-            if (string.IsNullOrEmpty(apiKey))
-                // API key'inizi buraya yazın
-                apiKey = "API_KEYINIZI_YAZIN";
+            string apiKey = AppConfiguration.Instance.OpenRouterApiKey;
             _aiService = new GeminiAIService(apiKey);
 
             InitializeComponent();

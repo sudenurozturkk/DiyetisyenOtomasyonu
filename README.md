@@ -2,13 +2,11 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-2.1-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)
 ![.NET](https://img.shields.io/badge/.NET_Framework-4.8-purple.svg)
 ![DevExpress](https://img.shields.io/badge/DevExpress-25.1-orange.svg)
 ![MySQL](https://img.shields.io/badge/MySQL-8.4-blue.svg)
-
-**Profesyonel Diyetisyen Hasta Takip ve Yonetim Sistemi**
+![C#](https://img.shields.io/badge/C%23-12.0-green.svg)
 
 </div>
 
@@ -16,19 +14,19 @@
 
 ## Proje Hakkinda
 
-DiyetPro, diyetisyenlerin hastalarini etkili bir sekilde takip edebilmesi icin gelistirilmis kapsamli bir masaustu uygulamasidir. Katmanli mimari, Repository ve Service Layer tasarim kaliplari kullanilarak olusturulmustur.
+DiyetPro, diyetisyenlerin hastalarini takip edebilmesi icin gelistirilmis bir Windows masaustu uygulamasidir. Katmanli mimari (Domain, Infrastructure, Forms, Shared) uzerine kurulmustur.
 
-### Temel Ozellikler
+**Temel Ozellikler:**
 
-- **Hasta Yonetimi:** Hasta kaydi, profil yonetimi, BMI/BMR/TDEE hesaplamalari
-- **Diyet Planlama:** Haftalik/gunluk diyet planlari, ogun kutuphanesi, alternatif ogun onerileri
-- **Kilo Takibi:** Kilo giris gecmisi, trend analizi, ilerleme grafikleri
-- **Hedef Takibi:** Su, kilo, adim, protein hedefleri ve ilerleme izleme
-- **Randevu Yonetimi:** Takvim ve bildirim sistemi
-- **Mesajlasma:** Diyetisyen-hasta iletisim modulu
-- **Raporlama:** Gorsel grafikler, istatistikler ve analiz ekranlari
-- **AI Destekli Oneriler:** OpenRouter API ile yapay zeka destekli analiz ve oneri sistemi
-- **Guvenlik:** PBKDF2 sifre hashleme, rol bazli yetkilendirme
+- Hasta kayit, profil yonetimi, BMI / BMR / TDEE hesaplamalari
+- Haftalik ve gunluk diyet plani olusturma, ogun kutuphanesi
+- Kilo takibi, trend analizi, ilerleme grafikleri
+- Hedef takibi (su, kilo, adim, egzersiz)
+- Randevu yonetimi
+- Diyetisyen-hasta mesajlasma
+- Gorsel raporlama ve istatistik ekranlari
+- OpenRouter API uzerinden AI destekli oneri sistemi
+- Rol bazli yetkilendirme (Diyetisyen / Hasta)
 
 ---
 
@@ -38,11 +36,10 @@ DiyetPro, diyetisyenlerin hastalarini etkili bir sekilde takip edebilmesi icin g
 |---------|-----------|
 | Platform | Windows Forms (.NET Framework 4.8) |
 | Dil | C# |
-| UI Framework | DevExpress WinForms 25.1 |
+| UI | DevExpress WinForms 25.1 |
 | Veritabani | MySQL 8.4 |
-| Mimari | 4 Katmanli (Domain / Repository / Service / Presentation) |
-| Guvenlik | PBKDF2 (10.000 iterasyon) |
-| AI | OpenRouter API (Gemini) |
+| Sifre Guvenligi | SHA-256 + Salt |
+| AI Entegrasyonu | OpenRouter API |
 
 ---
 
@@ -50,29 +47,23 @@ DiyetPro, diyetisyenlerin hastalarini etkili bir sekilde takip edebilmesi icin g
 
 ```
 DiyetisyenOtomasyonu/
-├── Domain/                          # Veri modelleri
-│   ├── User.cs, Patient.cs, Doctor.cs
-│   ├── Meal.cs, MealItem.cs, DietWeek.cs, DietDay.cs
-│   ├── Goal.cs, Note.cs, Message.cs, Appointment.cs
-│   ├── WeightEntry.cs, BodyMeasurement.cs, ExerciseTask.cs
-│   ├── AIAnalysis.cs, Badge.cs, Enums.cs
-│   └── ...
+├── Domain/                     # 20 entity sinifi
 ├── Infrastructure/
-│   ├── Database/                    # Veritabani baglantisi ve baslatma
-│   ├── Repositories/               # Repository Pattern (16 repository)
-│   ├── Services/                    # Is mantigi servisleri (15+ servis)
-│   ├── Security/                    # Kimlik dogrulama ve sifreleme
-│   ├── DI/                          # Dependency Injection container
-│   ├── Configuration/               # Uygulama yapilandirmasi
-│   └── Exceptions/                  # Merkezi hata yonetimi
+│   ├── Database/               # Baglanti yonetimi, tablo olusturma
+│   ├── Repositories/           # 16 repository + BaseRepository
+│   ├── Services/               # 19 servis sinifi
+│   ├── Security/               # Sifre hashleme, oturum yonetimi
+│   ├── DI/                     # Dependency Injection container
+│   ├── Configuration/          # Merkezi yapilandirma (App.config)
+│   └── Exceptions/             # Merkezi hata yonetimi
 ├── Forms/
-│   ├── Doctor/                      # Diyetisyen paneli formlari
-│   ├── Patient/                     # Hasta paneli formlari
-│   └── Login/                       # Giris ve kayit formlari
-├── Shared/                          # Ortak bilesenler (tema, sidebar, validasyon)
-├── Bootstrap/                       # Tema baslangic ayarlari
-├── DOCS/                            # Proje dokumantasyonu
-└── Program.cs                       # Uygulama giris noktasi
+│   ├── Doctor/                 # 14 diyetisyen paneli formu
+│   ├── Patient/                # 10 hasta paneli formu
+│   └── Login/                  # 3 giris/kayit formu
+├── Shared/                     # Tema, sidebar, toast, validasyon
+├── Bootstrap/                  # DevExpress tema ayarlari
+├── DOCS/                       # Proje dokumantasyonu
+└── Program.cs                  # Uygulama giris noktasi
 ```
 
 ---
@@ -89,98 +80,92 @@ DiyetisyenOtomasyonu/
 
 ### Adimlar
 
-1. **Depoyu klonlayin:**
-   ```bash
+1. Depoyu klonlayin:
+   ```
    git clone https://github.com/sudenurozturkk/DiyetisyenOtomasyonu.git
    ```
 
-2. **MySQL veritabanini hazirlayin:**
-   - MySQL Server'in calistigindan emin olun.
-   - `App.config` dosyasinda connection string'i kendi ortaminiza gore duzenleyin.
-   - Uygulama ilk calistirmada tablolari otomatik olusturur.
+2. `App.config` dosyasinda veritabani baglanti bilgilerini kendi ortaminiza gore duzenleyin.
+   Uygulama ilk calistirmada tablolari otomatik olusturur.
 
-3. **AI ozellikleri icin (istege bagli):**
-   - [OpenRouter](https://openrouter.ai/) uzerinden API key alin.
-   - `App.config` dosyasindaki `OpenRouterApiKey` degerini kendi key'inizle degistirin.
+3. AI ozellikleri icin (istege bagli): `App.config` dosyasindaki `OpenRouterApiKey` alanina
+   [OpenRouter](https://openrouter.ai/) uzerinden aldiginiz API key'i yazin.
 
-4. **Projeyi calistirin:**
-   - `DiyetisyenOtomasyonu.sln` dosyasini Visual Studio ile acin.
-   - `F5` ile build edip calistirin.
+4. `DiyetisyenOtomasyonu.sln` dosyasini Visual Studio ile acip `F5` ile calistirin.
 
-### Demo Hesabi
+### Giris Bilgileri
 
 | Rol | Kullanici Adi | Sifre |
 |-----|---------------|-------|
 | Diyetisyen | whodenur | 12345678 |
+| Hasta (ornek) | ahmetyilmaz | 12345678 |
 
-> Yeni diyetisyen hesabi olusturmak icin giris ekranindaki **Kayit Ol** butonunu kullanabilirsiniz.
-> Uygulama ilk calistiginda 15 ornek hasta otomatik olarak olusturulur.
+Uygulama ilk calistirmada 15 ornek hasta otomatik olusturulur (sifre: 12345678).
+Yeni diyetisyen hesabi icin giris ekranindaki **Kayit Ol** butonunu kullanabilirsiniz.
 
 ---
 
-## Mimari ve Tasarim
+## Mimari
 
-### Katmanli Mimari
+### Katmanlar
 
-- **Domain:** Entity siniflari ve is alani modelleri
-- **Infrastructure:** Veritabani erisimi, servisler, guvenlik, DI container
-- **Forms:** Windows Forms kullanici arayuzu
-- **Shared:** Uygulamanin genelinde kullanilan yardimci bilesenler
+- **Domain**: Entity siniflari (Patient, Doctor, Meal, Goal, vb.)
+- **Infrastructure**: Veritabani erisimi, servisler, guvenlik, DI, yapilandirma
+- **Forms**: Windows Forms arayuzu (Diyetisyen paneli, Hasta paneli, Giris)
+- **Shared**: Tema yonetimi, sidebar, toast bildirimi, input validasyonu
 
-### Uygulanan Tasarim Kaliplari
+### Tasarim Kaliplari
 
-- **Repository Pattern** - Veri erisim soyutlamasi
-- **Service Layer** - Is mantigi kapsulleme
-- **Singleton Pattern** - Veritabani baglantisi ve DI container
-- **Dependency Injection** - Constructor injection ile bagimlilik yonetimi
+- Repository Pattern
+- Service Layer
+- Singleton (DatabaseConfig, AppConfiguration, ServiceContainer)
+- Dependency Injection (constructor injection)
 
-### Akilli Algoritmalar
+### Veritabani
+
+MySQL uzerinde 18 tablo: Users, Patients, Doctors, Goals, Notes, Messages,
+WeightEntries, DietWeeks, DietDays, MealItems, BodyMeasurements, ExerciseTasks,
+Appointments, MealFeedback, Meals, PatientMealAssignments, AiChatLogs, Badges.
+
+Tum tablolar `DatabaseInitializer.cs` tarafindan `CREATE TABLE IF NOT EXISTS` ile otomatik olusturulur.
+
+### Hesaplama Algoritmalari
 
 | Algoritma | Aciklama |
 |-----------|----------|
-| BMI Hesaplama | Vucut kutle indeksi |
-| BMI Kategorizasyonu | Zayif / Normal / Fazla kilolu / Obez siniflandirma |
-| BMR Hesaplama | Mifflin-St Jeor denklemi ile bazal metabolizma |
-| TDEE Hesaplama | BMR x Aktivite carpani |
-| Ideal Kilo Araligi | BMI 18.5-24.9 bazli hesaplama |
-| Ilerleme Yuzdesi | Hedef bazli ilerleme hesabi |
-| Diyet Uyum Orani | Ogun tamamlama analizi |
+| BMI | Vucut kutle indeksi: kilo / (boy/100)^2 |
+| BMR | Mifflin-St Jeor denklemi ile bazal metabolizma |
+| TDEE | BMR x aktivite carpani |
+| Ideal Kilo | BMI 18.5-24.9 araligina gore |
 | Risk Analizi | Hizli kilo degisimi tespiti |
-| Kilo Trend Analizi | Zaman serisi bazli trend |
+| Diyet Uyum | Ogun tamamlama orani |
+| Kilo Trend | Zaman serisi bazli trend analizi |
 
 ---
 
 ## Dokumantasyon
 
-Detayli proje dokumantasyonu `DOCS/` klasorunde bulunmaktadir:
-
 | Dokuman | Icerik |
 |---------|--------|
-| [FINAL_RAPOR.md](DOCS/FINAL_RAPOR.md) | Kapsamli proje raporu |
+| [FINAL_RAPOR.md](DOCS/FINAL_RAPOR.md) | Proje raporu |
 | [USECASE_DIYAGRAMI.md](DOCS/USECASE_DIYAGRAMI.md) | Use Case analizi |
-| [SINIF_DIYAGRAMI.md](DOCS/SINIF_DIYAGRAMI.md) | Sinif diyagramlari ve OOP analizi |
+| [SINIF_DIYAGRAMI.md](DOCS/SINIF_DIYAGRAMI.md) | Sinif diyagramlari |
 | [ER_DIYAGRAMI.md](DOCS/ER_DIYAGRAMI.md) | Veritabani sema tasarimi |
-| [TEST_PLANI.md](DOCS/TEST_PLANI.md) | Test plani ve sonuclari |
-| [AI_INTEGRATION.md](DOCS/AI_INTEGRATION.md) | AI entegrasyon dokumantasyonu |
+| [TEST_PLANI.md](DOCS/TEST_PLANI.md) | Test plani |
+| [AI_INTEGRATION.md](DOCS/AI_INTEGRATION.md) | AI entegrasyon detaylari |
 
 ---
 
 ## Guvenlik
 
-- PBKDF2 ile sifre hashleme (10.000 iterasyon, benzersiz salt)
+- SHA-256 ile sifre hashleme (statik salt)
 - Rol bazli yetkilendirme (Diyetisyen / Hasta)
 - Oturum yonetimi (AuthContext)
-- Parametreli SQL sorgulari ile SQL Injection korunmasi
-- API key'ler ortam degiskenleri veya yapilandirma dosyasindan okunur
+- Parametreli SQL sorgulari
+- API key'ler `App.config` veya ortam degiskenlerinden okunur
 
 ---
 
 ## Lisans
 
-Bu proje egitim ve gosterim amaciyla gelistirilmistir.
-
----
-
-<div align="center">
-  2026 DiyetPro
-</div>
+Bu proje egitim amaciyla gelistirilmistir.

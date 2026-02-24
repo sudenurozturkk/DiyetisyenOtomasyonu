@@ -39,8 +39,6 @@ namespace DiyetisyenOtomasyonu.Infrastructure.DI
             container.Register<NoteService, NoteService>(ServiceLifetime.Transient);
             container.Register<ExerciseService, ExerciseService>(ServiceLifetime.Transient);
             container.Register<ReportService, ReportService>(ServiceLifetime.Transient);
-            container.Register<AiAssistantService, AiAssistantService>(ServiceLifetime.Transient);
-            container.Register<GeminiAIService, GeminiAIService>(ServiceLifetime.Transient);
             container.Register<NotificationService, NotificationService>(ServiceLifetime.Transient);
             container.Register<SearchService, SearchService>(ServiceLifetime.Transient);
             container.Register<BadgeService, BadgeService>(ServiceLifetime.Transient);

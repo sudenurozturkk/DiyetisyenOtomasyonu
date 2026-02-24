@@ -417,9 +417,9 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
 
         private static int CreateDemoPatient(string name, string username, string gender, int age, double height, double weight, int doctorId, LifestyleType job, string note)
         {
-            // User oluştur
+            string hashedPassword = Security.PasswordHasher.HashPassword("12345678");
             string sqlUser = $@"INSERT INTO Users (AdSoyad, KullaniciAdi, ParolaHash, Role, KayitTarihi, AktifMi) 
-                                VALUES ('{name}', '{username}', '$2a$11$Unu7B9W7n5.g.g.g.g.g.e', 1, NOW(), 1); 
+                                VALUES ('{name}', '{username}', '{hashedPassword}', 1, NOW(), 1); 
                                 SELECT LAST_INSERT_ID();";
             
             int userId = 0;

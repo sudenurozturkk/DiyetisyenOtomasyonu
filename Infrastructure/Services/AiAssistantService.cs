@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DiyetisyenOtomasyonu.Domain;
+using DiyetisyenOtomasyonu.Infrastructure.Configuration;
 using DiyetisyenOtomasyonu.Infrastructure.Repositories;
 
 namespace DiyetisyenOtomasyonu.Infrastructure.Services
@@ -28,9 +29,8 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
             _dietRepository = new DietRepository();
             _dataAggregator = new PatientDataAggregator();
             
-            // OpenRouter API Entegrasyonu
-            // API key'inizi buraya yazın
-            _aiService = new GeminiAIService("API_KEYINIZI_YAZIN");
+            string apiKey = AppConfiguration.Instance.OpenRouterApiKey;
+            _aiService = new GeminiAIService(apiKey);
 
             _responseTemplates = InitializeResponseTemplates();
         }

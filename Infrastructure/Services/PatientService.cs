@@ -128,8 +128,8 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
             if (_userRepository.UsernameExists(patient.KullaniciAdi))
                 throw new ArgumentException("Bu kullanıcı adı zaten kullanılıyor", nameof(patient.KullaniciAdi));
 
-            // Parola hashleme (eğer hashlenmemişse)
-            if (!string.IsNullOrEmpty(patient.ParolaHash) && !patient.ParolaHash.StartsWith("$2a$"))
+            // Parola hashleme (düz metin ise hashle, zaten hash ise dokunma)
+            if (!string.IsNullOrEmpty(patient.ParolaHash) && patient.ParolaHash.Length < 64)
             {
                 patient.ParolaHash = PasswordHasher.HashPassword(patient.ParolaHash);
             }

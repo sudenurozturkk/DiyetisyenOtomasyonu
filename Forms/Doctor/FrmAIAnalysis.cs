@@ -11,6 +11,7 @@ using DiyetisyenOtomasyonu.Infrastructure.Repositories;
 using DiyetisyenOtomasyonu.Infrastructure.Security;
 using DiyetisyenOtomasyonu.Domain;
 using DiyetisyenOtomasyonu.Shared;
+using DiyetisyenOtomasyonu.Infrastructure.Configuration;
 using DiyetisyenOtomasyonu.Infrastructure.DI;
 
 namespace DiyetisyenOtomasyonu.Forms.Doctor
@@ -66,13 +67,7 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
             _dietRepo = new DietRepository();
             _chatRepo = new AiChatRepository();
             
-            // API Key - ortam degiskeninden veya varsayilan
-            string apiKey = Environment.GetEnvironmentVariable("OPENROUTER_API_KEY");
-            if (string.IsNullOrEmpty(apiKey))
-            {
-                // API key'inizi buraya yazın
-                apiKey = "API_KEYINIZI_YAZIN";
-            }
+            string apiKey = AppConfiguration.Instance.OpenRouterApiKey;
             _aiService = new GeminiAIService(apiKey);
             
             InitializeComponent();
