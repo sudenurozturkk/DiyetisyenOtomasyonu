@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace DiyetisyenOtomasyonu.Domain
 {
@@ -40,7 +40,6 @@ namespace DiyetisyenOtomasyonu.Domain
 
     /// <summary>
     /// Yaşam tarzı tipleri - diyet planlaması için önemli
-    /// Academic: Lifestyle-aware planning
     /// </summary>
     public enum LifestyleType
     {
@@ -66,8 +65,7 @@ namespace DiyetisyenOtomasyonu.Domain
     }
 
     /// <summary>
-    /// Mesaj kategorileri - profesyonel iletişim için
-    /// Academic: Message categorization
+    /// Mesaj kategorileri
     /// </summary>
     public enum MessageCategory
     {

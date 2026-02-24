@@ -11,6 +11,7 @@ using DiyetisyenOtomasyonu.Infrastructure.Repositories;
 using DiyetisyenOtomasyonu.Infrastructure.Security;
 using DiyetisyenOtomasyonu.Domain;
 using DiyetisyenOtomasyonu.Shared;
+using DiyetisyenOtomasyonu.Infrastructure.DI;
 
 namespace DiyetisyenOtomasyonu.Forms.Doctor
 {
@@ -59,7 +60,8 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
 
         public FrmAIAnalysis()
         {
-            _patientService = new PatientService();
+            var container = ServiceContainer.Instance;
+            _patientService = container.GetService<PatientService>();
             _weightRepo = new WeightEntryRepository();
             _dietRepo = new DietRepository();
             _chatRepo = new AiChatRepository();

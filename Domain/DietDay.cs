@@ -1,14 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace DiyetisyenOtomasyonu.Domain
 {
     /// <summary>
     /// Günlük diyet planı
-    /// 
-    /// OOP Principle: Composition - MealItem listesi içerir
-    /// OOP Principle: Encapsulation - Günlük hesaplamalar kapsüllenir
-    /// Academic: Daily diet plan with target tracking
     /// </summary>
     public class DietDay
     {

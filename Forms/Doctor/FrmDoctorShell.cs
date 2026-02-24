@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -8,6 +8,7 @@ using DiyetisyenOtomasyonu.Infrastructure.Services;
 using DiyetisyenOtomasyonu.Infrastructure.Repositories;
 using DiyetisyenOtomasyonu.Domain;
 using DiyetisyenOtomasyonu.Shared;
+using DiyetisyenOtomasyonu.Infrastructure.DI;
 
 namespace DiyetisyenOtomasyonu.Forms.Doctor
 {
@@ -46,12 +47,15 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
         public FrmDoctorShell()
         {
             InitializeComponent();
-            _patientService = new PatientService();
-            _messageService = new MessageService();
-            _goalService = new GoalService();
-            _mealService = new MealService();
-            _appointmentRepo = new AppointmentRepository();
-            _userRepo = new UserRepository();
+
+            var container = ServiceContainer.Instance;
+            _patientService = container.GetService<PatientService>();
+            _messageService = container.GetService<MessageService>();
+            _goalService = container.GetService<GoalService>();
+            _mealService = container.GetService<MealService>();
+            _appointmentRepo = container.GetService<AppointmentRepository>();
+            _userRepo = container.GetService<UserRepository>();
+
             SetupUI();
             
             // Form tam boyutuna ulaştıktan sonra welcome screen'i yükle

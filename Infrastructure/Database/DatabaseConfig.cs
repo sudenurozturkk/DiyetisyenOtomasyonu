@@ -1,6 +1,7 @@
 using System;
 using System.Data;
 using MySql.Data.MySqlClient;
+using DiyetisyenOtomasyonu.Infrastructure.Configuration;
 
 namespace DiyetisyenOtomasyonu.Infrastructure.Database
 {
@@ -12,11 +13,13 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Database
         private static DatabaseConfig _instance;
         private static readonly object _lock = new object();
         
-        // MySQL bağlantı dizesi - utf8mb4 Türkçe karakterler için gerekli
-        private readonly string _connectionString = "Server=localhost;Database=dietpro_db;Uid=root;Pwd=;CharSet=utf8mb4;SslMode=Preferred;";
+        // MySQL bağlantı dizesi - Configuration'dan alınır
+        private readonly string _connectionString;
 
         private DatabaseConfig()
         {
+            // Configuration'dan connection string al
+            _connectionString = AppConfiguration.Instance.DatabaseConnectionString;
         }
 
         public static DatabaseConfig Instance

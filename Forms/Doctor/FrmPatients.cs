@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -10,6 +10,7 @@ using DiyetisyenOtomasyonu.Infrastructure.Services;
 using DiyetisyenOtomasyonu.Infrastructure.Security;
 using DiyetisyenOtomasyonu.Infrastructure.Repositories;
 using PatientEntity = DiyetisyenOtomasyonu.Domain.Patient;
+using DiyetisyenOtomasyonu.Infrastructure.DI;
 
 namespace DiyetisyenOtomasyonu.Forms.Doctor
 {
@@ -51,8 +52,10 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
 
         public FrmPatients()
         {
-            _patientRepository = new PatientRepository();
-            _patientService = new PatientService();
+            var container = ServiceContainer.Instance;
+            _patientRepository = container.GetService<PatientRepository>();
+            _patientService = container.GetService<PatientService>();
+
             InitializeComponent();
             BuildUI();
             this.Load += (s, e) => LoadPatients();

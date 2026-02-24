@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
@@ -11,6 +11,7 @@ using DevExpress.XtraGrid.Columns;
 using DiyetisyenOtomasyonu.Domain;
 using DiyetisyenOtomasyonu.Infrastructure.Services;
 using DiyetisyenOtomasyonu.Infrastructure.Security;
+using DiyetisyenOtomasyonu.Infrastructure.DI;
 using PatientEntity = DiyetisyenOtomasyonu.Domain.Patient;
 
 namespace DiyetisyenOtomasyonu.Forms.Doctor
@@ -61,8 +62,11 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
         public FrmAssignPlans()
         {
             InitializeComponent();
-            _mealService = new MealService();
-            _patientService = new PatientService();
+
+            var container = ServiceContainer.Instance;
+            _mealService = container.GetService<MealService>();
+            _patientService = container.GetService<PatientService>();
+
             _currentWeekStart = GetMonday(DateTime.Now);
             InitializeUI();
             LoadPatients();

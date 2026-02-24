@@ -9,9 +9,6 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Repositories
     /// <summary>
     /// Patient Repository - Hasta veri erişim katmanı
     /// Hasta ve User tablolarını birlikte yönetir
-    /// 
-    /// OOP Principle: Encapsulation - Karmaşık JOIN işlemleri kapsüllenir
-    /// Design Pattern: Repository Pattern
     /// </summary>
     public class PatientRepository : BaseRepository<Patient>
     {

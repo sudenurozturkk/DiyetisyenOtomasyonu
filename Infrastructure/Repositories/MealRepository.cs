@@ -8,9 +8,6 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Repositories
 {
     /// <summary>
     /// Meal Repository - Öğün/Yemek kütüphanesi veri erişim katmanı
-    /// 
-    /// OOP Principle: Single Responsibility - Sadece yemek veritabanı işlemleri
-    /// Design Pattern: Repository Pattern
     /// </summary>
     public class MealRepository
     {

@@ -1,4 +1,6 @@
-# Build results
+# ========================
+# Build Results
+# ========================
 [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/
@@ -14,9 +16,15 @@ bld/
 [Oo]ut/
 [Ll]og/
 [Ll]ogs/
+*.pdb
 
-# Visual Studio files
+# ========================
+# IDE & Editor Settings
+# ========================
 .vs/
+.vscode/
+.idea/
+.cr/
 *.suo
 *.user
 *.userosscache
@@ -24,7 +32,9 @@ bld/
 *.userprefs
 *.csproj.user
 
+# ========================
 # NuGet Packages
+# ========================
 *.nupkg
 *.snupkg
 .nuget/
@@ -32,57 +42,65 @@ packages/
 *.nuget.props
 *.nuget.targets
 
-# Rider
-.idea/
-
-# VS Code
-.vscode/
-
-# Windows
+# ========================
+# OS Files
+# ========================
 Thumbs.db
 ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
-
-# macOS
 .DS_Store
 
-# Backup files
+# ========================
+# Backup & Temp Files
+# ========================
 *~
 *.bak
 *.swp
+*.tmp
 
+# ========================
 # DevExpress
+# ========================
 *.DXLicense
 
-# Local development
-appsettings.local.json
-*.local
-
-# Database files
+# ========================
+# Database Files
+# ========================
 *.mdf
 *.ldf
 
-# Gemini/AI artifacts (keep these local)
-.gemini/
-
-# Build artifacts
-*.pdb
-
-# Documentation (SRS excluded from GitHub)
-DOCS/SRS_SOFTWARE_REQUIREMENTS_SPECIFICATION.md
-
-# API Keys and sensitive data
+# ========================
+# API Keys & Sensitive Data
+# ========================
+*.env
+.env.*
+appsettings.local.json
+appsettings.Development.json
 *api*key*.txt
 *apikey*.txt
-*.env
-.env.local
-appsettings.Development.json
 
-# Python scripts (temporary)
+# ========================
+# AI Artifacts
+# ========================
+.gemini/
+
+# ========================
+# Internal Dev Documents (not for GitHub)
+# ========================
+CALISTIRMA_TALIMATLARI.md
+GITHUB_SETUP.md
+ER_DIYAGRAM_KILAVUZU.md
+DOCS/SRS_SOFTWARE_REQUIREMENTS_SPECIFICATION.md
+DOCS/DOKUMANTASYON_TAMAMLAMA_RAPORU.md
+DOCS/GELISTIRME_PLANI.md
+DOCS/GELISTIRME_RAPORU.md
+DOCS/OZELLIK_ONERILERI.md
+DOCS/YENI_OZELLIKLER.md
+
+# ========================
+# Python (temporary scripts)
+# ========================
 *.py
 __pycache__/
 *.pyc
-
-# ER Diagram guide (temporary)
-ER_DIYAGRAM_KILAVUZU.md

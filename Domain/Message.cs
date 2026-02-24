@@ -1,12 +1,9 @@
-﻿using System;
+using System;
 
 namespace DiyetisyenOtomasyonu.Domain
 {
     /// <summary>
     /// Mesajlaşma entity'si - Hasta-Doktor iletişimi
-    /// 
-    /// OOP Principle: Encapsulation - Mesaj durumu ve öncelik mantığı kapsüllenir
-    /// Academic: Professional messaging with categorization
     /// </summary>
     public class Message
     {

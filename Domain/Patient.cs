@@ -1,15 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace DiyetisyenOtomasyonu.Domain
 {
-    /// <summary>
-    /// Hasta sınıfı - User'dan miras alır
-    /// 
-    /// OOP Principle: Inheritance - User sınıfından miras
-    /// OOP Principle: Encapsulation - BMI hesaplama mantığı kapsüllenir
-    /// Academic: Patient entity with medical and lifestyle attributes
-    /// </summary>
     public class Patient : User
     {
         // Temel bilgiler
@@ -94,7 +87,6 @@ namespace DiyetisyenOtomasyonu.Domain
         /// <summary>
         /// Bazal Metabolizma Hızı (BMR) hesaplama
         /// Mifflin-St Jeor denklemi kullanılır
-        /// Academic: Intelligent algorithm for calorie calculation
         /// </summary>
         public double BMR
         {
@@ -205,10 +197,6 @@ namespace DiyetisyenOtomasyonu.Domain
         }
     }
 
-    /// <summary>
-    /// Hasta alerji bilgisi
-    /// OOP Principle: Composition - Patient ile bileşim ilişkisi
-    /// </summary>
     public class PatientAllergy
     {
         public int Id { get; set; }

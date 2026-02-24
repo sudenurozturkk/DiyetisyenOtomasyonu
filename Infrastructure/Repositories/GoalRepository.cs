@@ -8,9 +8,6 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Repositories
 {
     /// <summary>
     /// Goal Repository - Hedef veri erişim katmanı
-    /// 
-    /// OOP Principle: Inheritance - BaseRepository'den miras alır
-    /// Design Pattern: Repository Pattern
     /// </summary>
     public class GoalRepository : BaseRepository<Goal>
     {

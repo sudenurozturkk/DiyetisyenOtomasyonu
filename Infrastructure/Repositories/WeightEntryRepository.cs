@@ -8,9 +8,6 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Repositories
 {
     /// <summary>
     /// Weight Entry Repository - Kilo takip veri erişim katmanı
-    /// 
-    /// OOP Principle: Inheritance - BaseRepository'den miras alır
-    /// Design Pattern: Repository Pattern
     /// </summary>
     public class WeightEntryRepository : BaseRepository<WeightEntry>
     {

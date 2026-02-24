@@ -8,10 +8,6 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
 {
     /// <summary>
     /// Öğün/Yemek yönetim servisi
-    /// 
-    /// OOP Principle: Single Responsibility - Öğün işlemlerinden sorumlu
-    /// Design Pattern: Service Layer - İş mantığı kapsüllenir
-    /// Academic: Meal library management for efficient diet planning
     /// </summary>
     public class MealService
     {

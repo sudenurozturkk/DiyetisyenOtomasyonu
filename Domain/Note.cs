@@ -1,12 +1,9 @@
-﻿using System;
+using System;
 
 namespace DiyetisyenOtomasyonu.Domain
 {
     /// <summary>
     /// Doktor Notu - Hasta takip notları
-    /// 
-    /// OOP Principle: Encapsulation - Not bilgileri kapsüllenir
-    /// Academic: Note categorization for professional tracking
     /// </summary>
     public class Note
     {

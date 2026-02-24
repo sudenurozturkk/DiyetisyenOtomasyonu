@@ -13,6 +13,7 @@ using DiyetisyenOtomasyonu.Infrastructure.Repositories;
 using DiyetisyenOtomasyonu.Infrastructure.Services;
 using DiyetisyenOtomasyonu.Infrastructure.Security;
 using DiyetisyenOtomasyonu.Shared;
+using DiyetisyenOtomasyonu.Infrastructure.DI;
 
 namespace DiyetisyenOtomasyonu.Forms.Doctor
 {
@@ -67,8 +68,11 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
         public FrmExerciseManager()
         {
             InitializeComponent();
-            _taskRepository = new ExerciseTaskRepository();
-            _patientService = new PatientService();
+
+            var container = ServiceContainer.Instance;
+            _taskRepository = container.GetService<ExerciseTaskRepository>();
+            _patientService = container.GetService<PatientService>();
+
             SetupUI();
             LoadData();
         }

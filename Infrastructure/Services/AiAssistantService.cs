@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -9,10 +9,6 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
 {
     /// <summary>
     /// AI Asistan Servisi - Yapay zeka destekli karar desteği
-    /// 
-    /// OOP Principle: Single Responsibility - AI analiz ve öneri işlemlerinden sorumlu
-    /// OOP Principle: Encapsulation - Analiz algoritmaları kapsüllenir
-    /// Academic: AI-assisted decision support with explainable and non-intrusive suggestions
     /// </summary>
     public class AiAssistantService
     {

@@ -7,9 +7,6 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Repositories
 {
     /// <summary>
     /// Not repository - Notlar için veritabanı işlemleri
-    /// 
-    /// OOP Principle: Single Responsibility - Not verisi işlemlerinden sorumlu
-    /// Design Pattern: Repository Pattern
     /// </summary>
     public class NoteRepository : BaseRepository<Note>
     {

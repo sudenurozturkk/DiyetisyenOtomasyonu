@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DiyetisyenOtomasyonu.Domain;
@@ -8,14 +8,6 @@ using DiyetisyenOtomasyonu.Shared;
 
 namespace DiyetisyenOtomasyonu.Infrastructure.Services
 {
-    /// <summary>
-    /// Hasta yönetim servisi
-    /// 
-    /// OOP Principle: Single Responsibility - Hasta işlemlerinden sorumlu
-    /// OOP Principle: Encapsulation - İş mantığı kapsüllenir
-    /// Design Pattern: Service Layer - İş mantığı UI'dan ayrılır
-    /// SOLID: Dependency Inversion - Repository arayüzüne bağımlı
-    /// </summary>
     public class PatientService
     {
         private readonly PatientRepository _patientRepository;
@@ -30,11 +22,14 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
         private const double MIN_WEIGHT = 20.0;
         private const double MAX_WEIGHT = 500.0;
 
-        public PatientService()
+        public PatientService(
+            PatientRepository patientRepository,
+            UserRepository userRepository,
+            WeightEntryRepository weightRepository)
         {
-            _patientRepository = new PatientRepository();
-            _userRepository = new UserRepository();
-            _weightRepository = new WeightEntryRepository();
+            _patientRepository = patientRepository ?? throw new ArgumentNullException(nameof(patientRepository));
+            _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+            _weightRepository = weightRepository ?? throw new ArgumentNullException(nameof(weightRepository));
         }
 
         /// <summary>

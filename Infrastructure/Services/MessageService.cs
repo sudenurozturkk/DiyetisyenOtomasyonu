@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DiyetisyenOtomasyonu.Domain;
@@ -8,10 +8,6 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
 {
     /// <summary>
     /// Mesajlaşma servisi
-    /// 
-    /// OOP Principle: Single Responsibility - Mesaj işlemlerinden sorumlu
-    /// Design Pattern: Service Layer
-    /// Academic: Professional messaging with categorization and priority
     /// </summary>
     public class MessageService
     {

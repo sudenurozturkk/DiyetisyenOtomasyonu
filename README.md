@@ -1,114 +1,83 @@
-# 🏥 DiyetPro - Diyetisyen Hasta Takip Otomasyonu
+# DiyetPro - Diyetisyen Hasta Takip Otomasyonu
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-2.0-blue.svg)
+![Version](https://img.shields.io/badge/version-2.1-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)
 ![.NET](https://img.shields.io/badge/.NET_Framework-4.8-purple.svg)
 ![DevExpress](https://img.shields.io/badge/DevExpress-25.1-orange.svg)
 ![MySQL](https://img.shields.io/badge/MySQL-8.4-blue.svg)
 
-**Profesyonel Diyetisyen Hasta Takip ve Yönetim Sistemi**
-
-[📖 Dokümantasyon](DOCS/README.md) | [🧪 Test Planı](DOCS/TEST_PLANI.md) | [📊 Final Rapor](DOCS/FINAL_RAPOR.md)
+**Profesyonel Diyetisyen Hasta Takip ve Yonetim Sistemi**
 
 </div>
 
 ---
 
-## 📋 Proje Özeti
+## Proje Hakkinda
 
-DiyetPro, **nesne yönelimli tasarım** prensipleri ve **yazılım mühendisliği yöntemleri** kullanılarak geliştirilmiş, **9 adet akıllı algoritma** içeren profesyonel bir diyetisyen hasta takip otomasyonudur.
+DiyetPro, diyetisyenlerin hastalarini etkili bir sekilde takip edebilmesi icin gelistirilmis kapsamli bir masaustu uygulamasidir. Katmanli mimari, Repository ve Service Layer tasarim kaliplari kullanilarak olusturulmustur.
 
-### ✨ Öne Çıkan Özellikler
+### Temel Ozellikler
 
-- 🧮 **Akıllı Algoritmalar:** BMI, BMR, TDEE hesaplama, risk analizi
-- 🔐 **Güvenli Kimlik Doğrulama:** PBKDF2 şifre hash, rol bazlı yetki
-- 📊 **Görsel Raporlama:** Kilo trendi, diyet uyum grafikleri
-- 💬 **Gerçek Zamanlı Mesajlaşma:** Diyetisyen-hasta iletişimi
-- 🎯 **Hedef Takibi:** Su, kilo, adım, protein hedefleri
-- 📅 **Randevu Yönetimi:** Takvim ve bildirim sistemi
-- 🤖 **AI Asistan:** Yapay zeka destekli öneri sistemi (stub)
-
----
-
-## 🎯 Akademik Kriterlere Uygunluk
-
-| Kriter | Puan | Durum |
-|--------|------|-------|
-| Proje Analizi | 10 | ✅ [MALIYET_KESTIRIM.md](DOCS/MALIYET_KESTIRIM.md) |
-| UseCase ve Sınıf Diyagramları | 10 | ✅ [USECASE](DOCS/USECASE_DIYAGRAMI.md), [SINIF](DOCS/SINIF_DIYAGRAMI.md) |
-| Zamanında Teslim | 10 | ✅ |
-| UI ve Kullanılabilirlik | 10 | ✅ Modern DevExpress UI |
-| Kodlama ve Çıktı | 30 | ✅ 16,300+ satır kod |
-| Test | 10 | ✅ [TEST_PLANI.md](DOCS/TEST_PLANI.md) - %96.5 başarı |
-| Dokümantasyon | 10 | ✅ [DOCS Klasörü](DOCS/) |
-| Veritabanı Tasarımı | 10 | ✅ [ER_DIYAGRAMI.md](DOCS/ER_DIYAGRAMI.md) |
+- **Hasta Yonetimi:** Hasta kaydi, profil yonetimi, BMI/BMR/TDEE hesaplamalari
+- **Diyet Planlama:** Haftalik/gunluk diyet planlari, ogun kutuphanesi, alternatif ogun onerileri
+- **Kilo Takibi:** Kilo giris gecmisi, trend analizi, ilerleme grafikleri
+- **Hedef Takibi:** Su, kilo, adim, protein hedefleri ve ilerleme izleme
+- **Randevu Yonetimi:** Takvim ve bildirim sistemi
+- **Mesajlasma:** Diyetisyen-hasta iletisim modulu
+- **Raporlama:** Gorsel grafikler, istatistikler ve analiz ekranlari
+- **AI Destekli Oneriler:** OpenRouter API ile yapay zeka destekli analiz ve oneri sistemi
+- **Guvenlik:** PBKDF2 sifre hashleme, rol bazli yetkilendirme
 
 ---
 
-## 🧠 Akıllı Algoritmalar (9 Adet)
+## Teknoloji Yigini
 
-| No | Algoritma | Tip | Formül/Açıklama |
-|----|-----------|-----|-----------------|
-| 1 | **BMI Hesaplama** | Hesaplama | `Kilo / (Boy/100)²` |
-| 2 | **BMI Kategorizasyonu** | Karar Verme | Zayıf/Normal/Obez sınıflandırma |
-| 3 | **BMR Hesaplama** | Hesaplama | Mifflin-St Jeor denklemi |
-| 4 | **TDEE Hesaplama** | Hesaplama | BMR × Aktivite çarpanı |
-| 5 | **İdeal Kilo Aralığı** | Hesaplama | BMI 18.5-24.9 aralığı |
-| 6 | **İlerleme Yüzdesi** | Hesaplama | `(Güncel/Hedef) × 100` |
-| 7 | **Diyet Uyum Oranı** | İstatistik | Öğün tamamlama analizi |
-| 8 | **Risk Analizi** | Karar Verme | Hızlı kilo değişimi tespiti |
-| 9 | **Kilo Trend Analizi** | İstatistik | Zaman serisi analizi |
+| Bilesen | Teknoloji |
+|---------|-----------|
+| Platform | Windows Forms (.NET Framework 4.8) |
+| Dil | C# |
+| UI Framework | DevExpress WinForms 25.1 |
+| Veritabani | MySQL 8.4 |
+| Mimari | 4 Katmanli (Domain / Repository / Service / Presentation) |
+| Guvenlik | PBKDF2 (10.000 iterasyon) |
+| AI | OpenRouter API (Gemini) |
 
 ---
 
-## 🏗️ Teknoloji Yığını
-
-| Bileşen | Teknoloji | Versiyon |
-|---------|-----------|----------|
-| **Platform** | Windows Forms | .NET Framework 4.8 |
-| **Dil** | C# | 12.0 |
-| **UI Framework** | DevExpress WinForms | 25.1.5 |
-| **Veritabanı** | MySQL | 8.4.0 |
-| **Mimari** | 4-Tier Layered | Domain/Repo/Service/Forms |
-| **Güvenlik** | PBKDF2 | 10,000 iterations |
-
----
-
-## 📁 Proje Yapısı
+## Proje Yapisi
 
 ```
 DiyetisyenOtomasyonu/
-├── Domain/                 # Veri modelleri (19 entity)
-│   ├── User.cs            # Temel kullanıcı
-│   ├── Patient.cs         # Hasta (BMI, TDEE hesaplamaları)
-│   ├── Doctor.cs          # Diyetisyen
+├── Domain/                          # Veri modelleri
+│   ├── User.cs, Patient.cs, Doctor.cs
+│   ├── Meal.cs, MealItem.cs, DietWeek.cs, DietDay.cs
+│   ├── Goal.cs, Note.cs, Message.cs, Appointment.cs
+│   ├── WeightEntry.cs, BodyMeasurement.cs, ExerciseTask.cs
+│   ├── AIAnalysis.cs, Badge.cs, Enums.cs
 │   └── ...
 ├── Infrastructure/
-│   ├── Database/          # MySQL bağlantısı
-│   ├── Repositories/      # Repository pattern (16 repo)
-│   ├── Security/          # PBKDF2 hash, AuthContext
-│   └── Services/          # İş mantığı (11 service)
+│   ├── Database/                    # Veritabani baglantisi ve baslatma
+│   ├── Repositories/               # Repository Pattern (16 repository)
+│   ├── Services/                    # Is mantigi servisleri (15+ servis)
+│   ├── Security/                    # Kimlik dogrulama ve sifreleme
+│   ├── DI/                          # Dependency Injection container
+│   ├── Configuration/               # Uygulama yapilandirmasi
+│   └── Exceptions/                  # Merkezi hata yonetimi
 ├── Forms/
-│   ├── Doctor/            # Diyetisyen formları (13)
-│   ├── Patient/           # Hasta formları (9)
-│   └── Login/             # Giriş formları
-├── Shared/                # Ortak stiller, validasyon
-├── DOCS/                  # 📚 Akademik Dokümantasyon
-│   ├── README.md          # Doküman haritası
-│   ├── FINAL_RAPOR.md     # Ana proje raporu
-│   ├── USECASE_DIYAGRAMI.md
-│   ├── SINIF_DIYAGRAMI.md
-│   ├── ER_DIYAGRAMI.md
-│   ├── MALIYET_KESTIRIM.md
-│   └── TEST_PLANI.md
-└── Program.cs             # Giriş noktası
+│   ├── Doctor/                      # Diyetisyen paneli formlari
+│   ├── Patient/                     # Hasta paneli formlari
+│   └── Login/                       # Giris ve kayit formlari
+├── Shared/                          # Ortak bilesenler (tema, sidebar, validasyon)
+├── Bootstrap/                       # Tema baslangic ayarlari
+├── DOCS/                            # Proje dokumantasyonu
+└── Program.cs                       # Uygulama giris noktasi
 ```
 
 ---
 
-## 🚀 Kurulum ve Çalıştırma
+## Kurulum
 
 ### Gereksinimler
 
@@ -118,149 +87,100 @@ DiyetisyenOtomasyonu/
 - MySQL Server 8.4+
 - DevExpress WinForms 25.1
 
-### Kurulum Adımları
+### Adimlar
 
-```bash
-# 1. MySQL veritabanını hazırlayın
-# App.config'de connection string düzenleyin
+1. **Depoyu klonlayin:**
+   ```bash
+   git clone https://github.com/sudenurozturkk/DiyetisyenOtomasyonu.git
+   ```
 
-# 2. API Key yapılandırması (AI özellikleri için)
-# Aşağıdaki dosyalarda "API_KEYINIZI_YAZIN" yerine kendi API key'inizi yazın:
-# - Infrastructure/Services/AiAssistantService.cs
-# - Forms/Doctor/FrmAIAnalysis.cs
-# - Forms/Doctor/FrmGoalsNotes.cs
+2. **MySQL veritabanini hazirlayin:**
+   - MySQL Server'in calistigindan emin olun.
+   - `App.config` dosyasinda connection string'i kendi ortaminiza gore duzenleyin.
+   - Uygulama ilk calistirmada tablolari otomatik olusturur.
 
-# 3. Visual Studio ile açın
-# DiyetisyenOtomasyonu.sln
+3. **AI ozellikleri icin (istege bagli):**
+   - [OpenRouter](https://openrouter.ai/) uzerinden API key alin.
+   - `App.config` dosyasindaki `OpenRouterApiKey` degerini kendi key'inizle degistirin.
 
-# 4. Build edin
-msbuild DiyetisyenOtomasyonu.sln /p:Configuration=Debug
+4. **Projeyi calistirin:**
+   - `DiyetisyenOtomasyonu.sln` dosyasini Visual Studio ile acin.
+   - `F5` ile build edip calistirin.
 
-# 5. Çalıştırın
-cd bin\Debug
-DiyetisyenOtomasyonu.exe
-```
+### Demo Hesaplari
 
-### ⚙️ Yapılandırma
-
-**Veritabanı Bağlantısı:**
-- `Infrastructure/Database/DatabaseConfig.cs` dosyasında connection string'i düzenleyin
-
-**API Key (AI Özellikleri için):**
-- OpenRouter API key alın: https://openrouter.ai/
-- Aşağıdaki dosyalarda `API_KEYINIZI_YAZIN` yerine kendi API key'inizi yazın:
-  - `Infrastructure/Services/AiAssistantService.cs`
-  - `Forms/Doctor/FrmAIAnalysis.cs`
-  - `Forms/Doctor/FrmGoalsNotes.cs`
-
-### 👤 Demo Hesapları
-
-| Rol | Kullanıcı Adı | Şifre |
+| Rol | Kullanici Adi | Sifre |
 |-----|---------------|-------|
-| 👨‍⚕️ Diyetisyen | doktor1 | 123456 |
-| 👨‍⚕️ Diyetisyen | doktor2 | 123456 |
-| 👤 Hasta | hasta1 | 123456 |
-| 👤 Hasta | hasta2 | 123456 |
+| Diyetisyen | doktor1 | 123456 |
+| Diyetisyen | doktor2 | 123456 |
+| Hasta | hasta1 | 123456 |
+| Hasta | hasta2 | 123456 |
 
 ---
 
-## 📊 Proje İstatistikleri
+## Mimari ve Tasarim
 
-| Metrik | Değer |
-|--------|-------|
-| 📝 Kod Satırı | ~16,300 |
-| 🏛️ Sınıf Sayısı | ~70 |
-| 🖥️ Form Sayısı | 23 |
-| 🗄️ Tablo Sayısı | 19 |
-| 📦 Repository | 16 |
-| ⚙️ Service | 11 |
-| 🧮 Akıllı Algoritma | 9 |
-| 🧪 Test Case | 87 |
-| ✅ Test Başarısı | %96.5 |
+### Katmanli Mimari
+
+- **Domain:** Entity siniflari ve is alani modelleri
+- **Infrastructure:** Veritabani erisimi, servisler, guvenlik, DI container
+- **Forms:** Windows Forms kullanici arayuzu
+- **Shared:** Uygulamanin genelinde kullanilan yardimci bilesenler
+
+### Uygulanan Tasarim Kaliplari
+
+- **Repository Pattern** - Veri erisim soyutlamasi
+- **Service Layer** - Is mantigi kapsulleme
+- **Singleton Pattern** - Veritabani baglantisi ve DI container
+- **Dependency Injection** - Constructor injection ile bagimlilik yonetimi
+
+### Akilli Algoritmalar
+
+| Algoritma | Aciklama |
+|-----------|----------|
+| BMI Hesaplama | Vucut kutle indeksi |
+| BMI Kategorizasyonu | Zayif / Normal / Fazla kilolu / Obez siniflandirma |
+| BMR Hesaplama | Mifflin-St Jeor denklemi ile bazal metabolizma |
+| TDEE Hesaplama | BMR x Aktivite carpani |
+| Ideal Kilo Araligi | BMI 18.5-24.9 bazli hesaplama |
+| Ilerleme Yuzdesi | Hedef bazli ilerleme hesabi |
+| Diyet Uyum Orani | Ogun tamamlama analizi |
+| Risk Analizi | Hizli kilo degisimi tespiti |
+| Kilo Trend Analizi | Zaman serisi bazli trend |
 
 ---
 
-## 🔒 Güvenlik Özellikleri
+## Dokumantasyon
 
-- ✅ **PBKDF2** ile şifre hash (10,000 iteration)
-- ✅ Her kullanıcı için **benzersiz salt**
-- ✅ **Rol bazlı yetkilendirme** (Doctor/Patient)
-- ✅ **Oturum yönetimi** (AuthContext)
-- ✅ **SQL Injection koruması**
+Detayli proje dokumantasyonu `DOCS/` klasorunde bulunmaktadir:
 
----
-
-## 📚 Dokümantasyon
-
-Tüm akademik dokümanlar `DOCS/` klasöründe:
-
-| Doküman | İçerik |
+| Dokuman | Icerik |
 |---------|--------|
-| [📖 FINAL_RAPOR.md](DOCS/FINAL_RAPOR.md) | Kapsamlı final raporu |
-| [🎯 USECASE_DIYAGRAMI.md](DOCS/USECASE_DIYAGRAMI.md) | 25 use case analizi |
-| [🏗️ SINIF_DIYAGRAMI.md](DOCS/SINIF_DIYAGRAMI.md) | OOP ve SOLID analizi |
-| [🗄️ ER_DIYAGRAMI.md](DOCS/ER_DIYAGRAMI.md) | 19 tablo, 3NF |
-| [💰 MALIYET_KESTIRIM.md](DOCS/MALIYET_KESTIRIM.md) | 554 işlev noktası |
-| [🧪 TEST_PLANI.md](DOCS/TEST_PLANI.md) | 87 test case |
+| [FINAL_RAPOR.md](DOCS/FINAL_RAPOR.md) | Kapsamli proje raporu |
+| [USECASE_DIYAGRAMI.md](DOCS/USECASE_DIYAGRAMI.md) | Use Case analizi |
+| [SINIF_DIYAGRAMI.md](DOCS/SINIF_DIYAGRAMI.md) | Sinif diyagramlari ve OOP analizi |
+| [ER_DIYAGRAMI.md](DOCS/ER_DIYAGRAMI.md) | Veritabani sema tasarimi |
+| [TEST_PLANI.md](DOCS/TEST_PLANI.md) | Test plani ve sonuclari |
+| [AI_INTEGRATION.md](DOCS/AI_INTEGRATION.md) | AI entegrasyon dokumantasyonu |
 
 ---
 
-## 🎨 Ekran Görüntüleri
+## Guvenlik
 
-### Diyetisyen Paneli
-- Modern sidebar navigasyon
-- Hasta yönetimi (CRUD)
-- Diyet planı oluşturma
-- Grafik raporlar
-
-### Hasta Paneli
-- Haftalık menü görüntüleme
-- Öğün tamamlama
-- Hedef takibi
-- İlerleme grafikleri
+- PBKDF2 ile sifre hashleme (10.000 iterasyon, benzersiz salt)
+- Rol bazli yetkilendirme (Diyetisyen / Hasta)
+- Oturum yonetimi (AuthContext)
+- Parametreli SQL sorgulari ile SQL Injection korunmasi
+- API key'ler ortam degiskenleri veya yapilandirma dosyasindan okunur
 
 ---
 
-## 🔧 Geliştirme Standartları
+## Lisans
 
-### OOP Prensipleri
-- ✅ Encapsulation, Inheritance, Polymorphism, Abstraction
-
-### SOLID Prensipleri
-- ✅ Single Responsibility
-- ✅ Open/Closed
-- ✅ Liskov Substitution
-- ✅ Interface Segregation
-- ✅ Dependency Inversion
-
-### Design Patterns
-- ✅ Repository Pattern
-- ✅ Service Layer Pattern
-- ✅ Singleton Pattern
-- ✅ Template Method Pattern
-
----
-
-## 📈 Gelecek Geliştirmeler
-
-- [ ] .NET 8 migrasyonu
-- [ ] Web versiyonu (ASP.NET Core)
-- [ ] Mobil uygulama (MAUI)
-- [ ] Gerçek AI entegrasyonu (Gemini API)
-- [ ] PDF rapor oluşturma
-
----
-
-## 📞 İletişim
-
-**Proje Tipi:** Akademik Final Projesi  
-**Tarih:** Ocak 2026  
-**Versiyon:** 2.0 Final
+Bu proje egitim ve gosterim amaciyla gelistirilmistir.
 
 ---
 
 <div align="center">
-
-© 2026 DiyetPro - Tüm Hakları Saklıdır
-
+  2026 DiyetPro
 </div>

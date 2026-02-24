@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
@@ -7,13 +7,6 @@ using DiyetisyenOtomasyonu.Infrastructure.Security;
 
 namespace DiyetisyenOtomasyonu.Forms.Login
 {
-    /// <summary>
-    /// Modern Login Formu
-    /// 
-    /// OOP Principle: Encapsulation - Giriş mantığı kapsüllenir
-    /// Academic: User authentication with secure password verification
-    /// UI/UX: Clean design with proper validation feedback
-    /// </summary>
     public partial class FrmLogin : XtraForm
     {
         private readonly UserRepository _userRepository;

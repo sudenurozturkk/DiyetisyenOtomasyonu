@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DiyetisyenOtomasyonu.Domain;
@@ -8,9 +8,6 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
 {
     /// <summary>
     /// Hedef yönetim servisi
-    /// 
-    /// OOP Principle: Single Responsibility - Hedef işlemlerinden sorumlu
-    /// Design Pattern: Service Layer
     /// </summary>
     public class GoalService
     {

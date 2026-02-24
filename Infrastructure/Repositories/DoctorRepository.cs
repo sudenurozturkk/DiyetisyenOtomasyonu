@@ -8,9 +8,6 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Repositories
 {
     /// <summary>
     /// Doctor Repository - Doktor veri erişim katmanı
-    /// 
-    /// OOP Principle: Inheritance - BaseRepository'den miras alır
-    /// Design Pattern: Repository Pattern
     /// </summary>
     public class DoctorRepository : BaseRepository<Doctor>
     {

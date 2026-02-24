@@ -12,16 +12,10 @@ using DiyetisyenOtomasyonu.Domain;
 using DiyetisyenOtomasyonu.Infrastructure.Services;
 using DiyetisyenOtomasyonu.Infrastructure.Security;
 using PatientEntity = DiyetisyenOtomasyonu.Domain.Patient;
+using DiyetisyenOtomasyonu.Infrastructure.DI;
 
 namespace DiyetisyenOtomasyonu.Forms.Doctor
 {
-    /// <summary>
-    /// Hasta Profil Sayfasi
-    /// Doktor hasta profilini goruntuler: ilerleme, hedefler, notlar, mesajlasma
-    /// 
-    /// OOP Principle: Single Responsibility - Hasta profil goruntuleme
-    /// Academic: Comprehensive patient profile view for healthcare management
-    /// </summary>
     public partial class FrmPatientProfile : XtraForm
     {
         private readonly int _patientId;
@@ -52,13 +46,15 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
         public FrmPatientProfile(int patientId)
         {
             _patientId = patientId;
-            _patientService = new PatientService();
-            _goalService = new GoalService();
-            _noteService = new NoteService();
-            _messageService = new MessageService();
-            _mealService = new MealService();
-            _aiService = new AiAssistantService();
 
+            var container = ServiceContainer.Instance;
+            _patientService = container.GetService<PatientService>();
+            _goalService = container.GetService<GoalService>();
+            _noteService = container.GetService<NoteService>();
+            _messageService = container.GetService<MessageService>();
+            _mealService = container.GetService<MealService>();
+            _aiService = container.GetService<AiAssistantService>();
+            
             InitializeComponent();
             LoadPatient();
             InitializeUI();

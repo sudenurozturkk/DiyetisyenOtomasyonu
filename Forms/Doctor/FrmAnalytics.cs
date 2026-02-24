@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -6,6 +6,7 @@ using DevExpress.XtraEditors;
 using DevExpress.XtraCharts;
 using DiyetisyenOtomasyonu.Infrastructure.Services;
 using DiyetisyenOtomasyonu.Infrastructure.Security;
+using DiyetisyenOtomasyonu.Infrastructure.DI;
 
 namespace DiyetisyenOtomasyonu.Forms.Doctor
 {
@@ -46,9 +47,12 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
         public FrmAnalytics()
         {
             InitializeComponent();
-            _patientService = new PatientService();
-            _dietService = new DietService();
-            _aiService = new AiAssistantService();
+
+            var container = ServiceContainer.Instance;
+            _patientService = container.GetService<PatientService>();
+            _dietService = container.GetService<DietService>();
+            _aiService = container.GetService<AiAssistantService>();
+
             InitializeUI();
             LoadPatients();
         }

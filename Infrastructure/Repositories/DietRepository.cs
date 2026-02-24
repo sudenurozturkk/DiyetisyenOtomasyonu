@@ -10,9 +10,6 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Repositories
     /// <summary>
     /// Diet Repository - Diyet planı veri erişim katmanı
     /// Haftalık plan, günlük plan ve öğün yönetimi
-    /// 
-    /// OOP Principle: Encapsulation - Karmaşık diyet ilişkileri kapsüllenir
-    /// Design Pattern: Repository Pattern
     /// </summary>
     public class DietRepository
     {

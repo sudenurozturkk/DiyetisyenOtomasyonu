@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DiyetisyenOtomasyonu.Domain;
@@ -8,10 +8,6 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
 {
     /// <summary>
     /// Diyet yönetim servisi
-    /// 
-    /// OOP Principle: Single Responsibility - Diyet plan işlemlerinden sorumlu
-    /// OOP Principle: Encapsulation - İş mantığı kapsüllenir
-    /// Design Pattern: Service Layer - İş mantığı UI'dan ayrılır
     /// </summary>
     public class DietService
     {

@@ -1,13 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace DiyetisyenOtomasyonu.Domain
 {
     /// <summary>
     /// Öğün kalemi (bir öğün içindeki yemek/besin)
-    /// 
-    /// OOP Principle: Encapsulation - Öğün bilgileri ve hesaplamalar kapsüllenir
-    /// Academic: Meal entity with portion, timing and alternative options
     /// </summary>
     public class MealItem
     {
@@ -103,9 +100,6 @@ namespace DiyetisyenOtomasyonu.Domain
     /// <summary>
     /// Alternatif öğün seçeneği
     /// Hastalara farklı seçenekler sunmak için
-    /// 
-    /// OOP Principle: Composition - MealItem ile bileşim ilişkisi
-    /// Academic: Alternative meals for flexibility
     /// </summary>
     public class AlternativeMeal
     {

@@ -35,6 +35,7 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Database
                 CreateMealsTable(connection);
                 CreatePatientMealAssignmentsTable(connection);
                 CreateAiChatLogsTable(connection);
+                CreateBadgesTable(connection);
             }
         }
 
@@ -479,6 +480,26 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Database
                     Timestamp DATETIME NOT NULL,
                     FOREIGN KEY (PatientId) REFERENCES Users(Id) ON DELETE CASCADE,
                     FOREIGN KEY (DoctorId) REFERENCES Users(Id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+            ExecuteNonQuery(connection, sql);
+        }
+
+        private static void CreateBadgesTable(IDbConnection connection)
+        {
+            string sql = @"
+                CREATE TABLE IF NOT EXISTS Badges (
+                    Id INT AUTO_INCREMENT PRIMARY KEY,
+                    PatientId INT NOT NULL,
+                    Type INT NOT NULL,
+                    Name VARCHAR(255) NOT NULL,
+                    Description TEXT,
+                    Icon VARCHAR(50),
+                    EarnedDate DATETIME NOT NULL,
+                    Progress INT DEFAULT 0,
+                    IsEarned TINYINT NOT NULL DEFAULT 0,
+                    FOREIGN KEY (PatientId) REFERENCES Users(Id) ON DELETE CASCADE,
+                    INDEX idx_patient (PatientId),
+                    INDEX idx_type (Type)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
             ExecuteNonQuery(connection, sql);
         }

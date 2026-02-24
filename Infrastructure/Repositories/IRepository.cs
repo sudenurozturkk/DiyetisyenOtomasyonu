@@ -5,11 +5,6 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Repositories
 {
     /// <summary>
     /// Generic Repository Interface - CRUD işlemleri için temel arayüz
-    /// 
-    /// OOP Principle: Abstraction - Veri erişim detayları soyutlanır
-    /// OOP Principle: Interface Segregation - Minimal ve odaklı arayüz
-    /// Design Pattern: Repository Pattern - Data access logic separation
-    /// SOLID: Dependency Inversion - High-level modules depend on abstractions
     /// </summary>
     /// <typeparam name="T">Entity tipi</typeparam>
     public interface IRepository<T> where T : class

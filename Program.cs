@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Windows.Forms;
 using DiyetisyenOtomasyonu.Bootstrap;
 using DiyetisyenOtomasyonu.Forms.Login;
@@ -6,18 +6,13 @@ using DiyetisyenOtomasyonu.Forms.Doctor;
 using DiyetisyenOtomasyonu.Forms.Patient;
 using DiyetisyenOtomasyonu.Infrastructure.Database;
 using DiyetisyenOtomasyonu.Infrastructure.Security;
+using DiyetisyenOtomasyonu.Shared;
+using DiyetisyenOtomasyonu.Infrastructure.Services;
+using DiyetisyenOtomasyonu.Infrastructure.DI;
+using DiyetisyenOtomasyonu.Infrastructure.Exceptions;
 
 namespace DiyetisyenOtomasyonu
 {
-    /// <summary>
-    /// Uygulama giriş noktası
-    /// 
-    /// Academic: Application entry point with proper initialization
-    /// - Theme bootstrapping
-    /// - Database initialization
-    /// - Authentication flow
-    /// - Role-based navigation
-    /// </summary>
     internal static class Program
     {
         [STAThread]
@@ -32,22 +27,32 @@ namespace DiyetisyenOtomasyonu
                 // Global hata yakalama
                 Application.ThreadException += (s, e) =>
                 {
-                    LogError("Thread Exception", e.Exception);
-                    ShowErrorMessage("Uygulama Hatası", e.Exception);
+                    GlobalExceptionHandler.Handle(e.Exception, "Application.ThreadException");
                 };
 
                 AppDomain.CurrentDomain.UnhandledException += (s, e) =>
                 {
                     var ex = e.ExceptionObject as Exception;
-                    LogError("Unhandled Exception", ex);
-                    ShowErrorMessage("Kritik Hata", ex);
+                    GlobalExceptionHandler.Handle(ex, "AppDomain.UnhandledException");
                 };
 
                 // DevExpress tema ayarları
                 ThemeBootstrapper.Apply();
 
+                // Tema yöneticisi - Dark/Light mode
+                ThemeManager.LoadTheme();
+
+                // Klavye kısayolları
+                KeyboardShortcuts.RegisterDefaultShortcuts();
+
                 // Veritabanı başlatma (MySQL)
                 InitializeDatabase();
+
+                // Dependency Injection Container başlatma
+                InitializeDependencyInjection();
+
+                // Logger servisi başlatma
+                LoggerService.Info("Uygulama başlatıldı", "Program.Main");
 
                 // Ana uygulama döngüsü
                 RunApplicationLoop();
@@ -145,23 +150,21 @@ namespace DiyetisyenOtomasyonu
         }
 
         /// <summary>
-        /// Hataları loglar. Debug modunda konsola yazar, production'da dosyaya yazılabilir.
+        /// Dependency Injection Container'ı başlat
+        /// </summary>
+        private static void InitializeDependencyInjection()
+        {
+            var container = ServiceContainer.Instance;
+            ServiceRegistration.RegisterServices(container);
+            LoggerService.Info("Dependency Injection Container başlatıldı", "Program.InitializeDI");
+        }
+
+        /// <summary>
+        /// Hataları loglar. LoggerService kullanır.
         /// </summary>
         private static void LogError(string context, Exception ex)
         {
-            var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-            var logMessage = $"[{timestamp}] {context}: {ex?.Message}";
-            
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine(logMessage);
-            if (ex?.StackTrace != null)
-            {
-                System.Diagnostics.Debug.WriteLine(ex.StackTrace);
-            }
-#else
-            // Production'da dosyaya loglama eklenebilir
-            // Örnek: File.AppendAllText("logs/error.log", logMessage + Environment.NewLine);
-#endif
+            LoggerService.Error($"{context}: {ex?.Message}", ex, "Program");
         }
     }
 }

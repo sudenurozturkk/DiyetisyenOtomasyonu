@@ -8,10 +8,6 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Repositories
 {
     /// <summary>
     /// Message Repository - Mesaj veri erişim katmanı
-    /// 
-    /// OOP Principle: Inheritance - BaseRepository'den miras alır
-    /// Design Pattern: Repository Pattern
-    /// Academic: Professional messaging with categorization
     /// </summary>
     public class MessageRepository : BaseRepository<Message>
     {

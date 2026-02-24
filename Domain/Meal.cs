@@ -5,9 +5,6 @@ namespace DiyetisyenOtomasyonu.Domain
     /// <summary>
     /// Öğün/Yemek modeli - Diyetisyenin oluşturduğu tüm yemekler
     /// Bu model, yemek kütüphanesi olarak kullanılır
-    /// 
-    /// OOP Principle: Encapsulation - Yemek bilgileri kapsüllenir
-    /// Academic: Reusable meal library for efficient diet planning
     /// </summary>
     public class Meal
     {

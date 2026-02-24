@@ -8,9 +8,6 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
 {
     /// <summary>
     /// Not yönetim servisi
-    /// 
-    /// OOP Principle: Single Responsibility - Not işlemlerinden sorumlu
-    /// Design Pattern: Service Layer
     /// </summary>
     public class NoteService
     {

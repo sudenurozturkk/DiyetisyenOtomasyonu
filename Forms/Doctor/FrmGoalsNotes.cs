@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -14,6 +14,7 @@ using DiyetisyenOtomasyonu.Infrastructure.Services;
 using DiyetisyenOtomasyonu.Infrastructure.Repositories;
 using DiyetisyenOtomasyonu.Infrastructure.Security;
 using DiyetisyenOtomasyonu.Shared;
+using DiyetisyenOtomasyonu.Infrastructure.DI;
 
 namespace DiyetisyenOtomasyonu.Forms.Doctor
 {
@@ -61,8 +62,9 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
 
         public FrmGoalsNotes()
         {
-            _goalService = new GoalService();
-            _patientService = new PatientService();
+            var container = ServiceContainer.Instance;
+            _goalService = container.GetService<GoalService>();
+            _patientService = container.GetService<PatientService>();
             
             string apiKey = Environment.GetEnvironmentVariable("OPENROUTER_API_KEY");
             if (string.IsNullOrEmpty(apiKey))

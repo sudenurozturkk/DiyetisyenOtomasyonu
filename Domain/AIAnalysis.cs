@@ -5,9 +5,6 @@ namespace DiyetisyenOtomasyonu.Domain
 {
     /// <summary>
     /// AI Analiz Sonucu - Yapay zeka destekli karar desteği
-    /// 
-    /// OOP Principle: Encapsulation - Analiz mantığı ve sonuçları kapsüllenir
-    /// Academic: AI-assisted decision support with explainable results
     /// </summary>
     public class AIAnalysisResult
     {
@@ -65,8 +62,6 @@ namespace DiyetisyenOtomasyonu.Domain
 
     /// <summary>
     /// Risk Uyarısı - Otomatik tespit edilen riskler
-    /// 
-    /// Academic: Early risk detection system
     /// </summary>
     public class RiskAlert
     {
@@ -131,8 +126,6 @@ namespace DiyetisyenOtomasyonu.Domain
 
     /// <summary>
     /// Diyet Uyum Kaydı - Günlük uyum takibi
-    /// 
-    /// Academic: Diet compliance tracking and analysis
     /// </summary>
     public class DietComplianceLog
     {
@@ -169,8 +162,6 @@ namespace DiyetisyenOtomasyonu.Domain
 
     /// <summary>
     /// Haftalık Performans Raporu
-    /// 
-    /// Academic: Weekly performance analysis
     /// </summary>
     public class WeeklyPerformanceReport
     {

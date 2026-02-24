@@ -1,12 +1,9 @@
-﻿using System;
+using System;
 
 namespace DiyetisyenOtomasyonu.Domain
 {
     /// <summary>
     /// Kilo kaydı
-    /// 
-    /// OOP Principle: Encapsulation - Kilo değişim hesaplamaları kapsüllenir
-    /// Academic: Weight tracking entity for trend analysis
     /// </summary>
     public class WeightEntry
     {
