@@ -107,14 +107,14 @@ DiyetisyenOtomasyonu/
    - `DiyetisyenOtomasyonu.sln` dosyasini Visual Studio ile acin.
    - `F5` ile build edip calistirin.
 
-### Demo Hesaplari
+### Demo Hesabi
 
 | Rol | Kullanici Adi | Sifre |
 |-----|---------------|-------|
-| Diyetisyen | doktor1 | 123456 |
-| Diyetisyen | doktor2 | 123456 |
-| Hasta | hasta1 | 123456 |
-| Hasta | hasta2 | 123456 |
+| Diyetisyen | whodenur | 12345678 |
+
+> Yeni diyetisyen hesabi olusturmak icin giris ekranindaki **Kayit Ol** butonunu kullanabilirsiniz.
+> Uygulama ilk calistiginda 15 ornek hasta otomatik olarak olusturulur.
 
 ---
 

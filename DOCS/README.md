@@ -38,9 +38,8 @@
 2. F5 ile calistirin
 ```
 
-### Demo Hesaplari
+### Demo Hesabi
 
 | Rol | Kullanici | Sifre |
 |-----|-----------|-------|
-| Diyetisyen | doktor1 | 123456 |
-| Hasta | hasta1 | 123456 |
+| Diyetisyen | whodenur | 12345678 |
