@@ -12,6 +12,7 @@
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -160,6 +161,7 @@
       <HintPath>packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Runtime.Caching" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -277,8 +279,18 @@
     <Compile Include="Forms\Patient\FrmPatientProfile.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Infrastructure\Configuration\AppConfiguration.cs" />
+    <Compile Include="Infrastructure\DI\IServiceProvider.cs" />
+    <Compile Include="Infrastructure\DI\ServiceContainer.cs" />
+    <Compile Include="Infrastructure\DI\ServiceLifetime.cs" />
+    <Compile Include="Infrastructure\DI\ServiceRegistration.cs" />
     <Compile Include="Infrastructure\Database\DatabaseConfig.cs" />
     <Compile Include="Infrastructure\Database\DatabaseInitializer.cs" />
+    <Compile Include="Infrastructure\Database\UnitOfWork.cs" />
+    <Compile Include="Infrastructure\Exceptions\AppException.cs" />
+    <Compile Include="Infrastructure\Exceptions\DatabaseException.cs" />
+    <Compile Include="Infrastructure\Exceptions\GlobalExceptionHandler.cs" />
+    <Compile Include="Infrastructure\Exceptions\ValidationException.cs" />
     <Compile Include="Infrastructure\Repositories\BaseRepository.cs" />
     <Compile Include="Infrastructure\Repositories\DietRepository.cs" />
     <Compile Include="Infrastructure\Repositories\DoctorRepository.cs" />
@@ -296,10 +308,13 @@
     <Compile Include="Infrastructure\Repositories\AppointmentRepository.cs" />
     <Compile Include="Infrastructure\Repositories\AiChatRepository.cs" />
     <Compile Include="Domain\AiChatMessage.cs" />
+    <Compile Include="Domain\Badge.cs" />
     <Compile Include="Infrastructure\Repositories\MealFeedbackRepository.cs" />
     <Compile Include="Infrastructure\Services\NoteService.cs" />
+    <Compile Include="Infrastructure\Repositories\BadgeRepository.cs" />
     <Compile Include="Infrastructure\Security\AuthContext.cs" />
     <Compile Include="Infrastructure\Security\PasswordHasher.cs" />
+    <Compile Include="Infrastructure\Security\SecurePasswordHasher.cs" />
     <Compile Include="Infrastructure\Services\AiAssistantService.cs" />
     <Compile Include="Infrastructure\Services\DietService.cs" />
     <Compile Include="Infrastructure\Services\GoalService.cs" />
@@ -312,10 +327,20 @@
     <Compile Include="Infrastructure\Services\PatientDataAggregator.cs" />
     <Compile Include="Infrastructure\Services\IAIService.cs" />
     <Compile Include="Infrastructure\Services\GeminiAIService.cs" />
+    <Compile Include="Infrastructure\Services\BadgeService.cs" />
+    <Compile Include="Infrastructure\Services\CacheService.cs" />
+    <Compile Include="Infrastructure\Services\DashboardService.cs" />
     <Compile Include="Infrastructure\Services\DemoDataSeeder.cs" />
+    <Compile Include="Infrastructure\Services\LoggerService.cs" />
+    <Compile Include="Infrastructure\Services\NotificationService.cs" />
+    <Compile Include="Infrastructure\Services\PhotoService.cs" />
+    <Compile Include="Infrastructure\Services\QRCodeService.cs" />
+    <Compile Include="Infrastructure\Services\SearchService.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Shared\Guards.cs" />
+    <Compile Include="Shared\KeyboardShortcuts.cs" />
+    <Compile Include="Shared\ThemeManager.cs" />
     <Compile Include="Shared\ModernSidebar.cs">
       <SubType>Component</SubType>
     </Compile>

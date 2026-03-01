@@ -145,26 +145,25 @@ public void BMI_ShouldCalculateCorrectly()
 
 ### 2.2 Security Layer Testleri
 
-#### Test Case: Parola Hash (SecurePasswordHasher)
+#### Test Case: Parola Hash (PasswordHasher)
 
 | Test ID | TC-005 |
 |---------|--------|
-| **Modül** | Infrastructure/Security/SecurePasswordHasher.cs |
+| **Modül** | Infrastructure/Security/PasswordHasher.cs |
 | **Metod** | HashPassword, VerifyPassword |
-| **Açıklama** | PBKDF2 hash doğruluğu |
+| **Açıklama** | SHA-256 + Salt hash doğruluğu |
 
 | Parola | İşlem | Beklenen | Sonuç |
 |--------|-------|----------|-------|
-| "Test123!" | Hash | 60+ karakter hash | ✅ BAŞARILI |
+| "Test123!" | Hash | 64 karakter hex hash | ✅ BAŞARILI |
 | "Test123!" | Verify (doğru) | true | ✅ BAŞARILI |
 | "Yanlis123!" | Verify (yanlış) | false | ✅ BAŞARILI |
 | "" | Verify (boş) | false | ✅ BAŞARILI |
 
 **Güvenlik Özellikleri:**
-- ✅ Her hash'de benzersiz salt üretilir
-- ✅ 10,000 PBKDF2 iterasyonu
-- ✅ 32 byte (256 bit) anahtar uzunluğu
-- ✅ Timing attack koruması
+- ✅ Statik salt ile SHA-256 hashleme
+- ✅ 64 karakter hex çıktı (256 bit)
+- ✅ Tek yönlü hash (geri dönüşümsüz)
 
 ---
 
@@ -420,7 +419,7 @@ public void BMI_ShouldCalculateCorrectly()
 
 | Test | Beklenen | Sonuç |
 |------|----------|-------|
-| Parola hash kontrolü | PBKDF2 kullanılır | ✅ BAŞARILI |
+| Parola hash kontrolü | SHA-256 + Salt kullanılır | ✅ BAŞARILI |
 | Salt benzersizliği | Her parola farklı salt | ✅ BAŞARILI |
 | Hassas veri loglanmaz | Parola logda yok | ✅ BAŞARILI |
 

@@ -30,7 +30,7 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
         /// </summary>
         public List<Patient> SearchPatients(string searchTerm, PatientSearchFilter filter = null)
         {
-            var allPatients = _patientRepository.GetAll();
+            var allPatients = _patientRepository.GetAll().ToList();
             
             // Full-text search
             if (!string.IsNullOrWhiteSpace(searchTerm))
@@ -62,9 +62,8 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
         /// </summary>
         private List<Patient> ApplyFilters(List<Patient> patients, PatientSearchFilter filter)
         {
-            var filtered = patients.AsQueryable();
+            IEnumerable<Patient> filtered = patients;
 
-            // BMI kategorisi filtresi
             if (filter.BMICategory.HasValue)
             {
                 filtered = filtered.Where(p =>
@@ -133,9 +132,9 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
         /// </summary>
         public List<Patient> ApplyQuickFilter(QuickFilterType filterType, int? doctorId = null)
         {
-            var allPatients = doctorId.HasValue 
+            var allPatients = (doctorId.HasValue 
                 ? _patientRepository.GetByDoctorId(doctorId.Value) 
-                : _patientRepository.GetAll();
+                : _patientRepository.GetAll()).ToList();
 
             return filterType switch
             {

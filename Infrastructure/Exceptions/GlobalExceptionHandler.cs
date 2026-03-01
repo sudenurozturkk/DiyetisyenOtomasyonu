@@ -50,8 +50,8 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Exceptions
                 ValidationException ve => ve.Message,
                 DatabaseException de => "Veritabanı işlemi sırasında bir hata oluştu. Lütfen daha sonra tekrar deneyin.",
                 AppException ae => ae.Message,
-                ArgumentException ae => $"Geçersiz parametre: {ae.Message}",
                 ArgumentNullException ane => $"Eksik parametre: {ane.ParamName}",
+                ArgumentException ae => $"Geçersiz parametre: {ae.Message}",
                 UnauthorizedAccessException uae => "Bu işlem için yetkiniz bulunmamaktadır.",
                 TimeoutException te => "İşlem zaman aşımına uğradı. Lütfen tekrar deneyin.",
                 _ => "Beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin."

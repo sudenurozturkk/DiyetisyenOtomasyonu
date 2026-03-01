@@ -38,7 +38,7 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
             
             return _cacheService.GetOrSet(cacheKey, () =>
             {
-                var patients = _patientRepository.GetByDoctorId(doctorId);
+                var patients = _patientRepository.GetByDoctorId(doctorId).ToList();
                 var appointments = _appointmentRepository.GetAll()
                     .Where(a => a.DoctorId == doctorId)
                     .ToList();
@@ -89,7 +89,7 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
                 {
                     CurrentWeight = patient.GuncelKilo,
                     BMI = patient.BMI,
-                    BMICategory = patient.BMICategory,
+                    BMICategory = patient.BMIKategori,
                     ActiveGoals = goals.Count,
                     CompletedGoals = goals.Count(g => g.CurrentValue >= g.TargetValue),
                     WeeklyProgress = CalculateWeeklyProgress(weightEntries),

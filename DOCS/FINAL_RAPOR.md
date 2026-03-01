@@ -65,7 +65,7 @@ Bu projenin geliştirilmesi sürecinde desteklerini esirgemeyen tüm hocalarıma
 - ✅ **9 adet akıllı algoritma** (BMI, TDEE, Risk Analizi, vb.)
 - ✅ **AI entegrasyonu** (Google Gemini API) - **Tam çalışır durumda** ✅
 - ✅ Modern ve profesyonel UI/UX tasarımı
-- ✅ Güvenli kimlik doğrulama (PBKDF2)
+- ✅ Güvenli kimlik doğrulama (SHA-256 + Salt)
 - ✅ Kapsamlı raporlama ve analiz
 
 ## 1.2 Projenin Amacı
@@ -122,7 +122,7 @@ Bu projenin temel amacı, diyetisyenlerin hasta takip süreçlerini dijitalleşt
 | .NET Framework | 4.8 | Platform |
 | MySQL | 8.4.0 | Veritabanı |
 | ADO.NET | - | Veri erişim |
-| PBKDF2 | - | Şifre hashleme |
+| SHA-256 + Salt | - | Şifre hashleme |
 
 ### 1.4.2 Frontend Teknolojileri
 
@@ -162,7 +162,7 @@ Bu projenin temel amacı, diyetisyenlerin hasta takip süreçlerini dijitalleşt
 - ✅ Modern ve kullanıcı dostu arayüz
 - ✅ Gerçek zamanlı mesajlaşma
 - ✅ Kapsamlı görsel raporlar
-- ✅ Güvenli veri yönetimi (PBKDF2)
+- ✅ Güvenli veri yönetimi (SHA-256 + Salt)
 
 ## 2.2 Arayüz Gerekliliği
 
@@ -199,7 +199,7 @@ Bu projenin temel amacı, diyetisyenlerin hasta takip süreçlerini dijitalleşt
 
 ```
 1. Kullanıcı kayıt formunu doldurur
-2. Sistem PBKDF2 ile şifreyi hashler
+2. Sistem SHA-256 + Salt ile şifreyi hashler
 3. Kullanıcı Users tablosuna kaydedilir
 4. Rolüne göre (Doctor/Patient) ilgili tabloya eklenir
 5. Giriş yapabilir
@@ -255,7 +255,7 @@ Bu projenin temel amacı, diyetisyenlerin hasta takip süreçlerini dijitalleşt
 | ID | Gereksinim | Açıklama |
 |----|------------|----------|
 | NFR-01 | Performans | Sayfa yükleme < 2 sn |
-| NFR-02 | Güvenlik | PBKDF2 hash, rol bazlı yetki |
+| NFR-02 | Güvenlik | SHA-256 hash, rol bazlı yetki |
 | NFR-03 | Kullanılabilirlik | Modern UI, kolay navigasyon |
 | NFR-04 | Güvenilirlik | %99.9 uptime |
 | NFR-05 | Ölçeklenebilirlik | 1000+ hasta desteği |
@@ -717,7 +717,7 @@ DietWeeks (Haftalık Plan)
 **Önkoşul:** Kullanıcı sistemde kayıtlı olmalı  
 **Ana Akış:**
 1. Kullanıcı kullanıcı adı ve şifre girer
-2. Sistem PBKDF2 ile şifreyi doğrular
+2. Sistem SHA-256 + Salt ile şifreyi doğrular
 3. Rol bazlı yönlendirme yapılır (Diyetisyen → FrmDoctorShell, Hasta → FrmPatientShell)
 4. AuthContext'e kullanıcı bilgileri kaydedilir
 
@@ -785,7 +785,7 @@ DietWeeks (Haftalık Plan)
 
 **Özellikler:**
 - Modern ve kullanıcı dostu tasarım
-- Güvenli şifre hashleme (PBKDF2)
+- Güvenli şifre hashleme (SHA-256 + Salt)
 - Demo hesapları desteği
 
 ### 3.6.2 Dashboard Modülü
@@ -1006,9 +1006,9 @@ public class PatientService
 **Dosya Sayısı:** 3
 
 **Ana Sınıflar:**
-- `PasswordHasher.cs`: PBKDF2 hashleme
+- `PasswordHasher.cs`: SHA-256 + Salt ile şifre hashleme
 - `AuthContext.cs`: Oturum yönetimi
-- `SecurePasswordHasher.cs`: Güvenli şifre işlemleri
+- `SecurePasswordHasher.cs`: PBKDF2 tabanlı gelişmiş şifre hashleme (alternatif)
 
 ## 4.3 Kod Stilleri
 
@@ -1132,7 +1132,7 @@ Tahmini Kod Satırı = 18,285 satır
 2. **AI Entegrasyonu:** Google Gemini API entegrasyonu
 3. **Kapsamlı Veri Modeli:** 19 tablo, karmaşık ilişkiler
 4. **Zengin UI:** 26 form, modern tasarım
-5. **Güvenlik:** PBKDF2, rol bazlı yetkilendirme
+5. **Güvenlik:** SHA-256 + Salt, rol bazlı yetkilendirme
 
 ## 4.5 Akıllı Algoritmalar
 
@@ -1440,11 +1440,11 @@ Gereksinim Analizi  ◄────────────────►  Kabu
 - **Formül:** BMR × Aktivite Çarpanı
 - **Sonuç:** ✅ Başarılı
 
-**Test TC-004: Parola Hash (PBKDF2)**
-- **Modül:** Infrastructure/Security/SecurePasswordHasher.cs
+**Test TC-004: Parola Hash (SHA-256 + Salt)**
+- **Modül:** Infrastructure/Security/PasswordHasher.cs
 - **Metod:** HashPassword, VerifyPassword
 - **Test:**
-  - Hash: "Test123!" → 60+ karakter hash ✅
+  - Hash: "Test123!" → 64 karakter hex hash ✅
   - Verify (doğru): true ✅
   - Verify (yanlış): false ✅
 
@@ -1831,7 +1831,7 @@ Application.ThreadException += (s, e) =>
 | **Kapsamlı Test** | 87 adet test ile kod güvenilirliğinin sağlanması (%96.5 Başarı) |
 | **Akıllı Algoritmalar** | 9 adet akıllı algoritma (BMI, TDEE, Risk Analizi, vb.) ile karar destek sistemi |
 | **Raporlama** | Detaylı analitik verilerin PDF formatında dışa aktarılabilmesi |
-| **Güvenlik** | PBKDF2 şifre hashleme, rol bazlı yetkilendirme |
+| **Güvenlik** | SHA-256 + Salt şifre hashleme, rol bazlı yetkilendirme |
 
 **Sayısal Başarılar:**
 - **~16,300 satır** kaliteli kod
@@ -1894,7 +1894,7 @@ Projede uygulanan teknik standartlar ve kalite güvence mekanizmaları aşağıd
 | **Exception Handling** | Global hata yönetimi, try-catch blokları ve özelleştirilmiş hata mesajları kullanılmıştır. |
 | **Logging & Audit** | Kritik veri değişiklikleri ve hatalar için merkezi log sistemi kurulmuştur. |
 | **Validation** | Kullanıcı girdileri sunucu tarafında doğrulanmaktadır. |
-| **Security** | Şifreler PBKDF2 ile hashlenmekte, hassas veriler güvenli şekilde saklanmaktadır. |
+| **Security** | Şifreler SHA-256 + Salt ile hashlenmekte, hassas veriler güvenli şekilde saklanmaktadır. |
 | **Performance** | Veritabanı işlemlerinde async/await pattern'i ve lazy loading kullanılmıştır. |
 | **Code Organization** | Katmanlı mimari ile kod organizasyonu sağlanmıştır. |
 | **SOLID Principles** | Tüm katmanlarda SOLID prensipleri uygulanmıştır. |
@@ -1922,7 +1922,7 @@ Bu proje süreci, hem teknik yetkinliklerimi hem de süreç yönetimi becerileri
 | **Entegrasyon** | AI API entegrasyonu, JSON işlemleri |
 | **Test Mühendisliği** | Manual Testing, Fonksiyonel Test Senaryoları |
 | **Arayüz (UI)** | Windows Forms Geliştirme, DevExpress Kütüphanesi, UX Prensipleri |
-| **Güvenlik** | Veri Şifreleme (PBKDF2), Rol bazlı yetkilendirme |
+| **Güvenlik** | Veri Şifreleme (SHA-256 + Salt), Rol bazlı yetkilendirme |
 | **Akıllı Algoritmalar** | BMI, TDEE, BMR, Risk Analizi, İlerleme Hesaplama algoritmaları |
 
 ### 7.2.2 Soft Skills (Kişisel Gelişim)

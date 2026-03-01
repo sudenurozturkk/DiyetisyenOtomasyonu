@@ -53,7 +53,7 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
             _noteService = container.GetService<NoteService>();
             _messageService = container.GetService<MessageService>();
             _mealService = container.GetService<MealService>();
-            _aiService = container.GetService<AiAssistantService>();
+            _aiService = new AiAssistantService();
             
             InitializeComponent();
             LoadPatient();

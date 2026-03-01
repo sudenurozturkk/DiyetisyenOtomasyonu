@@ -624,24 +624,22 @@ Proje **4 katmanlı mimari** kullanmaktadır:
 
 ## 6. SECURITY LAYER (Güvenlik)
 
-### 6.1 SecurePasswordHasher (PBKDF2)
+### 6.1 PasswordHasher (SHA-256 + Salt)
 
 ```csharp
 ┌──────────────────────────────────────────────┐
 │      <<Static Class>>                        │
-│    SecurePasswordHasher                      │
+│    PasswordHasher                            │
 ├──────────────────────────────────────────────┤
-│ - SaltSize: const int = 16                   │
-│ - KeySize: const int = 32                    │
-│ - Iterations: const int = 10000              │
+│ - Salt: const string                         │
 ├──────────────────────────────────────────────┤
 │ + HashPassword(password): string             │
-│   AKILLI ALGORITMA: PBKDF2                   │
-│   - Random salt generation                   │
-│   - 10,000 iterations                        │
+│   ALGORITMA: SHA-256 + Salt                  │
+│   - Statik salt ile hashleme                 │
+│   - 64 karakter hex çıktı                    │
 │                                              │
 │ + VerifyPassword(pwd, hash): bool            │
-│   - Timing attack korumalı                   │
+│   - Hash karşılaştırmalı doğrulama           │
 │                                              │
 │ + IsValidPassword(pwd, out err): bool        │
 │   - Length check (8-128)                     │

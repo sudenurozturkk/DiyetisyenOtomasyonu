@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.IO;
 using System.Windows.Forms;
 using DevExpress.LookAndFeel;
 using DevExpress.Skins;
@@ -13,34 +14,30 @@ namespace DiyetisyenOtomasyonu.Shared
     public static class ThemeManager
     {
         private static ThemeMode _currentTheme = ThemeMode.Light;
-        private const string THEME_SETTING_KEY = "ApplicationTheme";
+        private static readonly string _settingsFile = Path.Combine(
+            AppDomain.CurrentDomain.BaseDirectory, "theme.conf");
 
-        /// <summary>
-        /// Mevcut tema
-        /// </summary>
         public static ThemeMode CurrentTheme
         {
             get => _currentTheme;
             private set => _currentTheme = value;
         }
 
-        /// <summary>
-        /// Tema yükle (uygulama başlangıcında)
-        /// </summary>
         public static void LoadTheme()
         {
             try
             {
-                var savedTheme = Properties.Settings.Default[THEME_SETTING_KEY]?.ToString();
-                if (Enum.TryParse<ThemeMode>(savedTheme, out var theme))
+                if (File.Exists(_settingsFile))
                 {
-                    ApplyTheme(theme);
+                    var savedTheme = File.ReadAllText(_settingsFile).Trim();
+                    if (Enum.TryParse<ThemeMode>(savedTheme, out var theme))
+                    {
+                        ApplyTheme(theme);
+                        return;
+                    }
                 }
-                else
-                {
-                    // Sistem temasına göre otomatik seç
-                    ApplyTheme(IsSystemDarkMode() ? ThemeMode.Dark : ThemeMode.Light);
-                }
+
+                ApplyTheme(IsSystemDarkMode() ? ThemeMode.Dark : ThemeMode.Light);
             }
             catch
             {
@@ -48,9 +45,6 @@ namespace DiyetisyenOtomasyonu.Shared
             }
         }
 
-        /// <summary>
-        /// Tema uygula
-        /// </summary>
         public static void ApplyTheme(ThemeMode mode)
         {
             _currentTheme = mode;
@@ -66,11 +60,7 @@ namespace DiyetisyenOtomasyonu.Shared
                     UserLookAndFeel.Default.SetSkinStyle("Office 2019 Colorful");
                 }
 
-                // Tema tercihini kaydet
-                Properties.Settings.Default[THEME_SETTING_KEY] = mode.ToString();
-                Properties.Settings.Default.Save();
-
-                // Tüm açık formları güncelle
+                File.WriteAllText(_settingsFile, mode.ToString());
                 UpdateAllForms();
             }
             catch (Exception ex)

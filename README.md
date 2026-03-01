@@ -6,7 +6,7 @@
 ![.NET](https://img.shields.io/badge/.NET_Framework-4.8-purple.svg)
 ![DevExpress](https://img.shields.io/badge/DevExpress-25.1-orange.svg)
 ![MySQL](https://img.shields.io/badge/MySQL-8.4-blue.svg)
-![C#](https://img.shields.io/badge/C%23-12.0-green.svg)
+![C#](https://img.shields.io/badge/C%23-latest-green.svg)
 
 </div>
 

@@ -51,7 +51,7 @@ namespace DiyetisyenOtomasyonu.Forms.Doctor
             var container = ServiceContainer.Instance;
             _patientService = container.GetService<PatientService>();
             _dietService = container.GetService<DietService>();
-            _aiService = container.GetService<AiAssistantService>();
+            _aiService = new AiAssistantService();
 
             InitializeUI();
             LoadPatients();

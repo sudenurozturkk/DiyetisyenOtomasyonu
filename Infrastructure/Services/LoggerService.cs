@@ -86,7 +86,7 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
 
                     // Console'a yaz (Debug modunda)
 #if DEBUG
-                    Debug.WriteLine(logEntry);
+                    System.Diagnostics.Debug.WriteLine(logEntry);
 #endif
 
                     // Dosyaya yaz
@@ -101,7 +101,7 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
                 catch (Exception ex)
                 {
                     // Loglama hatası - sadece console'a yaz
-                    Debug.WriteLine($"Logging error: {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"Logging error: {ex.Message}");
                 }
             }
         }

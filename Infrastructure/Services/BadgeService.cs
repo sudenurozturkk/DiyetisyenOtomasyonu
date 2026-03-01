@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using DiyetisyenOtomasyonu.Domain;
+using DiyetisyenOtomasyonu.Infrastructure.Repositories;
 
 namespace DiyetisyenOtomasyonu.Infrastructure.Services
 {
@@ -114,7 +115,7 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
         private List<Badge> CheckWeightBadges(int patientId)
         {
             var badges = new List<Badge>();
-            var weightEntries = _weightRepository.GetByPatientId(patientId);
+            var weightEntries = _weightRepository.GetByPatientId(patientId).ToList();
             if (weightEntries.Count < 2) return badges;
 
             var firstWeight = weightEntries.OrderBy(w => w.Date).First().Weight;
@@ -193,7 +194,7 @@ namespace DiyetisyenOtomasyonu.Infrastructure.Services
         private ComplianceStats CalculateCompliance(int patientId)
         {
             // Basit uyum hesaplama (gerçek implementasyon daha karmaşık olabilir)
-            var dietWeeks = _dietRepository.GetDietWeeksByPatientId(patientId);
+            var dietWeeks = _dietRepository.GetPatientAllWeeks(patientId).ToList();
             var perfectDays = 0;
             var consecutiveDays = 0;
 

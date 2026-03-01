@@ -856,8 +856,8 @@ WHERE PatientId = 1
 
 ### 8.1 Parola Güvenliği
 
-- ✅ **PBKDF2** hash algoritması (10,000 iterations)
-- ✅ Her kullanıcı için benzersiz **salt**
+- ✅ **SHA-256 + Salt** hash algoritması
+- ✅ 64 karakter hex çıktı (256 bit güvenlik)
 - ✅ Hash uzunluğu: 32 byte (256 bit)
 
 ### 8.2 Veri Bütünlüğü
