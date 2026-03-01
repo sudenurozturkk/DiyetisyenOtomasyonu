@@ -128,34 +128,7 @@ Indexes:
 
 ---
 
-### 2.4 PatientAllergies (Hasta Alerjileri)
-
-**İşlev:** Hastaların alerji bilgilerini tutar
-
-```sql
-┌─────────────────────────────────────────────────┐
-│              PatientAllergies                   │
-├─────────────────────────────────────────────────┤
-│ PK  Id              INT AUTO_INCREMENT          │
-│ FK  PatientId       INT → Patients.Id           │
-│     AllergyName     VARCHAR(200)                │
-│     Severity        INT (enum)                  │
-│     Notes           TEXT                        │
-└─────────────────────────────────────────────────┘
-
-Foreign Keys:
-- FK_PatientAllergies_Patients: PatientId → Patients(Id) ON DELETE CASCADE
-
-Indexes:
-- PRIMARY KEY (Id)
-- INDEX (PatientId)
-```
-
-**İlişki:** Patients (N:1)
-
----
-
-### 2.5 WeightEntries (Kilo Takip Tablosu)
+### 2.4 WeightEntries (Kilo Takip Tablosu)
 
 **İşlev:** Hastaların kilo geçmişini günlük olarak tutar
 
@@ -184,7 +157,7 @@ Indexes:
 
 ---
 
-### 2.6 DietWeeks (Haftalık Diyet Planı)
+### 2.5 DietWeeks (Haftalık Diyet Planı)
 
 **İşlev:** Haftalık diyet planlarının ana kaydı
 
@@ -219,7 +192,7 @@ Indexes:
 
 ---
 
-### 2.7 DietDays (Günlük Diyet Planı)
+### 2.6 DietDays (Günlük Diyet Planı)
 
 **İşlev:** Haftalık planın günlük detayları
 
@@ -248,7 +221,7 @@ Indexes:
 
 ---
 
-### 2.8 MealItems (Öğün Detayları) ⭐
+### 2.7 MealItems (Öğün Detayları) ⭐
 
 **İşlev:** Her öğünün besin değerleri ve hasta tamamlama durumu
 
@@ -291,7 +264,7 @@ Indexes:
 
 ---
 
-### 2.9 Goals (Hedefler Tablosu)
+### 2.8 Goals (Hedefler Tablosu)
 
 **İşlev:** Hasta hedeflerini ve ilerlemeyi tutar
 
@@ -327,37 +300,7 @@ Indexes:
 
 ---
 
-### 2.10 ProgressSnapshots (İlerleme Anlık Görüntüleri)
-
-**İşlev:** Haftalık/aylık ilerleme kayıtları
-
-```sql
-┌─────────────────────────────────────────────────┐
-│             ProgressSnapshots                   │
-├─────────────────────────────────────────────────┤
-│ PK  Id                  INT AUTO_INCREMENT      │
-│ FK  PatientId           INT → Patients.Id       │
-│     Date                DATETIME                │
-│     Weight              DOUBLE                  │
-│     BMI                 DOUBLE                  │
-│     ComplianceRate      DOUBLE                  │
-│     WeeklyLoss          DOUBLE                  │
-│     Notes               TEXT                    │
-└─────────────────────────────────────────────────┘
-
-Foreign Keys:
-- FK_ProgressSnapshots_Patients: PatientId → Patients(Id) ON DELETE CASCADE
-
-Indexes:
-- PRIMARY KEY (Id)
-- INDEX (PatientId, Date)
-```
-
-**İlişki:** Patients (N:1)
-
----
-
-### 2.11 Messages (Mesajlaşma Tablosu)
+### 2.9 Messages (Mesajlaşma Tablosu) 
 
 **İşlev:** Diyetisyen-Hasta mesajlaşması
 
@@ -394,7 +337,7 @@ Indexes:
 
 ---
 
-### 2.12 Notes (Hasta Notları)
+### 2.10 Notes (Hasta Notları)
 
 **İşlev:** Diyetisyenlerin hasta hakkında tuttuğu notlar
 
@@ -427,7 +370,7 @@ Indexes:
 
 ---
 
-### 2.13 Appointments (Randevular)
+### 2.11 Appointments (Randevular)
 
 **İşlev:** Randevu kayıtları ve finansal takip
 
@@ -463,7 +406,7 @@ Indexes:
 
 ---
 
-### 2.14 BodyMeasurements (Vücut Ölçüleri)
+### 2.12 BodyMeasurements (Vücut Ölçüleri)
 
 **İşlev:** Vücut ölçümlerinin geçmişi
 
@@ -494,7 +437,7 @@ Indexes:
 
 ---
 
-### 2.15 ExerciseTasks (Egzersiz Görevleri)
+### 2.13 ExerciseTasks (Egzersiz Görevleri)
 
 **İşlev:** Hastalara atanan egzersiz görevleri
 
@@ -532,68 +475,37 @@ Indexes:
 
 ---
 
-### 2.16 AIAnalysis (AI Analiz Kayıtları)
-
-**İşlev:** AI destekli analizlerin sonuçları
-
-```sql
-┌─────────────────────────────────────────────────┐
-│                 AIAnalysis                      │
-├─────────────────────────────────────────────────┤
-│ PK  Id              INT AUTO_INCREMENT          │
-│ FK  PatientId       INT → Patients.Id           │
-│     AnalysisDate    DATETIME                    │
-│     AnalysisType    INT (enum)                  │
-│     InputData       TEXT (JSON)                 │
-│     ResultData      TEXT (JSON)                 │
-│     Recommendations TEXT                        │
-│     Confidence      DOUBLE (0-1)                │
-└─────────────────────────────────────────────────┘
-
-Foreign Keys:
-- FK_AIAnalysis_Patients: PatientId → Patients(Id) ON DELETE CASCADE
-
-Indexes:
-- PRIMARY KEY (Id)
-- INDEX (PatientId, AnalysisDate)
-- INDEX (AnalysisType)
-```
-
-**İlişki:** Patients (N:1)
-
-**Akıllı Algoritma:** AI destekli sağlık analizi
-
----
-
-### 2.17 AiChatMessages (AI Sohbet Geçmişi)
+### 2.14 AiChatLogs (AI Sohbet Kayıtları) 
 
 **İşlev:** Hasta-AI asistan sohbet kayıtları
 
 ```sql
 ┌─────────────────────────────────────────────────┐
-│              AiChatMessages                     │
+│                AiChatLogs                       │
 ├─────────────────────────────────────────────────┤
 │ PK  Id              INT AUTO_INCREMENT          │
-│ FK  PatientId       INT → Patients.Id           │
+│ FK  PatientId       INT → Users.Id              │
+│ FK  DoctorId        INT → Users.Id              │
 │     Message         TEXT                        │
-│     Response        TEXT                        │
+│     IsAiResponse    TINYINT (0/1)               │
 │     Timestamp       DATETIME                    │
-│     IsUserMessage   BOOLEAN                     │
 └─────────────────────────────────────────────────┘
 
 Foreign Keys:
-- FK_AiChatMessages_Patients: PatientId → Patients(Id) ON DELETE CASCADE
+- FK_AiChatLogs_Patient: PatientId → Users(Id) ON DELETE CASCADE
+- FK_AiChatLogs_Doctor: DoctorId → Users(Id) ON DELETE CASCADE
 
 Indexes:
 - PRIMARY KEY (Id)
-- INDEX (PatientId, Timestamp)
 ```
 
-**İlişki:** Patients (N:1)
+**İlişkiler:**
+- Users/Patients (N:1)
+- Users/Doctors (N:1)
 
 ---
 
-### 2.18 Meals (Hazır Yemek Şablonları)
+### 2.15 Meals (Hazır Yemek Şablonları) 
 
 **İşlev:** Diyetisyenlerin kullanabileceği yemek veritabanı
 
@@ -623,13 +535,13 @@ Indexes:
 
 ---
 
-### 2.19 MealFeedbacks (Öğün Geri Bildirimleri)
+### 2.16 MealFeedback (Öğün Geri Bildirimleri)
 
 **İşlev:** Hastaların öğünler hakkındaki yorumları
 
 ```sql
 ┌─────────────────────────────────────────────────┐
-│              MealFeedbacks                      │
+│              MealFeedback                       │
 ├─────────────────────────────────────────────────┤
 │ PK  Id              INT AUTO_INCREMENT          │
 │ FK  MealItemId      INT → MealItems.Id          │
@@ -640,8 +552,8 @@ Indexes:
 └─────────────────────────────────────────────────┘
 
 Foreign Keys:
-- FK_MealFeedbacks_MealItems: MealItemId → MealItems(Id) ON DELETE CASCADE
-- FK_MealFeedbacks_Patients: PatientId → Patients(Id) ON DELETE CASCADE
+- FK_MealFeedback_MealItems: MealItemId → MealItems(Id) ON DELETE CASCADE
+- FK_MealFeedback_Patients: PatientId → Patients(Id) ON DELETE CASCADE
 
 Indexes:
 - PRIMARY KEY (Id)
@@ -652,6 +564,78 @@ Indexes:
 **İlişkiler:**
 - MealItems (N:1)
 - Patients (N:1)
+
+---
+
+### 2.17 PatientMealAssignments (Hasta-Öğün Atamaları)
+
+**İşlev:** Hastalara atanan öğün planlarını detaylı tutar
+
+```sql
+┌─────────────────────────────────────────────────┐
+│          PatientMealAssignments                 │
+├─────────────────────────────────────────────────┤
+│ PK  Id                  INT AUTO_INCREMENT      │
+│ FK  PatientId           INT NOT NULL             │
+│ FK  DoctorId            INT NOT NULL             │
+│ FK  MealId              INT                      │
+│     WeekStartDate       DATETIME NOT NULL        │
+│     DayOfWeek           INT NOT NULL             │
+│     MealTime            INT NOT NULL             │
+│     MealName            VARCHAR(255)             │
+│     Description         TEXT                     │
+│     Calories            DOUBLE                   │
+│     Protein             DOUBLE                   │
+│     Carbs               DOUBLE                   │
+│     Fat                 DOUBLE                   │
+│     PortionGrams        DOUBLE                   │
+│     PortionDescription  VARCHAR(100)             │
+│     IsConsumed          TINYINT DEFAULT 0        │
+│     ConsumedAt          DATETIME                 │
+│     Notes               TEXT                     │
+│     CreatedAt           DATETIME                 │
+└─────────────────────────────────────────────────┘
+
+Indexes:
+- PRIMARY KEY (Id)
+```
+
+**İlişkiler:**
+- Patients (N:1)
+- Doctors (N:1)
+- Meals (N:1)
+
+---
+
+### 2.18 Badges (Rozet ve Başarılar)
+
+**İşlev:** Hastaların kazandığı rozetler ve başarılar
+
+```sql
+┌─────────────────────────────────────────────────┐
+│                  Badges                         │
+├─────────────────────────────────────────────────┤
+│ PK  Id              INT AUTO_INCREMENT          │
+│ FK  PatientId       INT NOT NULL → Users.Id     │
+│     Type            INT NOT NULL                │
+│     Name            VARCHAR(255) NOT NULL       │
+│     Description     TEXT                        │
+│     Icon            VARCHAR(50)                 │
+│     EarnedDate      DATETIME NOT NULL           │
+│     Progress        INT DEFAULT 0              │
+│     IsEarned        TINYINT DEFAULT 0           │
+└─────────────────────────────────────────────────┘
+
+Foreign Keys:
+- FK_Badges_Users: PatientId → Users(Id) ON DELETE CASCADE
+
+Indexes:
+- PRIMARY KEY (Id)
+- INDEX idx_patient (PatientId)
+- INDEX idx_type (Type)
+```
+
+**İlişki:** Users/Patients (N:1)
 
 ---
 
@@ -676,11 +660,9 @@ Indexes:
     │                                    │
     ├──1:N──► WeightEntries              │
     │                                    │
-    ├──1:N──► DietWeeks ──1:N──► DietDays ──1:N──► MealItems ──1:N──► MealFeedbacks
+    ├──1:N──► DietWeeks ──1:N──► DietDays ──1:N──► MealItems ──1:N──► MealFeedback
     │                                                   │
     ├──1:N──► Goals                                     │
-    │                                                   │
-    ├──1:N──► ProgressSnapshots                        │
     │                                                   │
     ├──1:N──► Notes                                    │
     │                                                   │
@@ -690,11 +672,11 @@ Indexes:
     │                                                   │
     ├──1:N──► ExerciseTasks                            │
     │                                                   │
-    ├──1:N──► AIAnalysis                               │
+    ├──1:N──► AiChatLogs                               │
     │                                                   │
-    ├──1:N──► AiChatMessages                           │
+    ├──1:N──► PatientMealAssignments                   │
     │                                                   │
-    └──1:N──► PatientAllergies
+    └──1:N──► Badges
 
 ┌────────┐
 │ Meals  │ (Bağımsız Lookup Table)
@@ -703,7 +685,7 @@ Indexes:
 
 ---
 
-## 4. İLİŞKİ DETAYLAShopRI
+## 4. İLİŞKİ DETAYLARI
 
 ### 4.1 One-to-One (1:1) İlişkiler
 
@@ -724,12 +706,12 @@ Indexes:
 | Patients | Appointments | PatientId | Hasta randevuları |
 | Patients | BodyMeasurements | PatientId | Vücut ölçüleri |
 | Patients | ExerciseTasks | PatientId | Egzersiz görevleri |
-| Patients | AIAnalysis | PatientId | AI analizleri |
-| Patients | AiChatMessages | PatientId | AI sohbetleri |
-| Patients | PatientAllergies | PatientId | Hasta alerjileri |
+| Patients | AiChatLogs | PatientId | AI sohbet kayıtları |
+| Patients | PatientMealAssignments | PatientId | Hasta öğün atamaları |
+| Patients | Badges | PatientId | Rozet ve başarılar |
 | DietWeeks | DietDays | DietWeekId | Haftalık planın günleri |
 | DietDays | MealItems | DietDayId | Günlük öğünler |
-| MealItems | MealFeedbacks | MealItemId | Öğün geri bildirimleri |
+| MealItems | MealFeedback | MealItemId | Öğün geri bildirimleri |
 | Users | Messages (from) | FromUserId | Gönderilen mesajlar |
 | Users | Messages (to) | ToUserId | Alınan mesajlar |
 

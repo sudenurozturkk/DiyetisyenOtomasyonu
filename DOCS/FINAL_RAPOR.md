@@ -60,7 +60,7 @@ Bu projenin geliştirilmesi sürecinde desteklerini esirgemeyen tüm hocalarıma
 **DiyetPro - Diyetisyen Hasta Takip Otomasyonu**, diyetisyenlerin hasta takip süreçlerini dijitalleştiren, **akıllı algoritmalar** içeren, kapsamlı ve kullanıcı dostu bir Windows Forms uygulamasıdır.
 
 ### Proje Özellikleri:
-- ✅ **26 adet form** ile zengin kullanıcı arayüzü
+- ✅ **27 adet form** ile zengin kullanıcı arayüzü
 - ✅ **18 tablo** ile kapsamlı veri modeli
 - ✅ **9 adet akıllı algoritma** (BMI, TDEE, Risk Analizi, vb.)
 - ✅ **AI entegrasyonu** (Google Gemini API) - **Tam çalışır durumda** ✅
@@ -359,29 +359,28 @@ Bu projenin temel amacı, diyetisyenlerin hasta takip süreçlerini dijitalleşt
 - **İlişkiler:** Foreign Key constraints
 - **İndeksler:** Primary Key, Foreign Key, Unique indexes
 
-### 3.2.2 Tablo Listesi (19 Tablo)
+### 3.2.2 Tablo Listesi (18 Tablo)
 
 | No | Tablo Adı | Açıklama | Kayıt Sayısı (Tahmini) |
 |----|-----------|----------|------------------------|
 | 1 | Users | Tüm kullanıcılar | 100-1000 |
 | 2 | Patients | Hasta bilgileri | 50-500 |
 | 3 | Doctors | Diyetisyen bilgileri | 1-10 |
-| 4 | DietWeeks | Haftalık diyet planları | 200-2000 |
-| 5 | DietDays | Günlük diyet planları | 1400-14000 |
-| 6 | MealItems | Öğün öğeleri | 4200-42000 |
-| 7 | Meals | Öğün tanımları | 100-500 |
-| 8 | Goals | Hasta hedefleri | 200-2000 |
-| 9 | WeightEntries | Kilo kayıtları | 500-5000 |
-| 10 | BodyMeasurements | Vücut ölçüleri | 500-5000 |
-| 11 | Messages | Mesajlar | 1000-10000 |
-| 12 | Notes | Hasta notları | 500-5000 |
+| 4 | Goals | Hasta hedefleri | 200-2000 |
+| 5 | Notes | Hasta notları | 500-5000 |
+| 6 | Messages | Mesajlar | 1000-10000 |
+| 7 | WeightEntries | Kilo kayıtları | 500-5000 |
+| 8 | DietWeeks | Haftalık diyet planları | 200-2000 |
+| 9 | DietDays | Günlük diyet planları | 1400-14000 |
+| 10 | MealItems | Öğün öğeleri | 4200-42000 |
+| 11 | BodyMeasurements | Vücut ölçüleri | 500-5000 |
+| 12 | ExerciseTasks | Egzersiz görevleri | 300-3000 |
 | 13 | Appointments | Randevular | 200-2000 |
-| 14 | ExerciseTasks | Egzersiz görevleri | 300-3000 |
-| 15 | MealFeedbacks | Öğün geri bildirimleri | 2000-20000 |
-| 16 | ProgressSnapshots | İlerleme anlık görüntüleri | 500-5000 |
-| 17 | AIAnalysis | AI analiz sonuçları | 100-1000 |
-| 18 | AiChatMessages | AI sohbet mesajları | 500-5000 |
-| 19 | Reports | Raporlar | 100-1000 |
+| 14 | MealFeedback | Öğün geri bildirimleri | 2000-20000 |
+| 15 | Meals | Öğün tanımları | 100-500 |
+| 16 | PatientMealAssignments | Hasta-öğün atamaları | 500-5000 |
+| 17 | AiChatLogs | AI sohbet kayıtları | 500-5000 |
+| 18 | Badges | Rozet ve başarılar | 100-1000 |
 
 ### 3.2.3 Modül 1: Kimlik ve Organizasyon (Identity & Core)
 
@@ -417,8 +416,7 @@ Patients (PK: Id, FK: UserId, DoctorId)
 
 ```
 Patients
-└── AIAnalysis (FK: PatientId → Patients.Id)
-    └── AiChatMessages (FK: AnalysisId → AIAnalysis.Id)
+└── AiChatLogs (FK: PatientId → Users.Id, DoctorId → Users.Id)
 ```
 
 ### 3.2.6 Modüller Arası Entegrasyon Tablosu
@@ -426,7 +424,7 @@ Patients
 | Modül | Bağlantı Tablosu | İlişki |
 |-------|------------------|--------|
 | Identity ↔ Project | Users ↔ Patients | 1:1 |
-| Project ↔ AI | Patients ↔ AIAnalysis | 1:N |
+| Project ↔ AI | Patients ↔ AiChatLogs | 1:N |
 | Project ↔ Communication | Patients ↔ Messages | 1:N |
 
 ### 3.2.7 Tasarım Kararları (Neyi Neden Yaptım?)
@@ -526,8 +524,7 @@ Dokümantasyon                                         ██████
 │ Patient  │
 └────┬─────┘
      │
-     └─── AIAnalysis
-          └─── AiChatMessages
+     └─── AiChatLogs
 ```
 
 ### 3.4.4 Detaylı Sınıf Diyagramı
@@ -663,7 +660,9 @@ public class AiAssistantService
   - 1:N Notes
   - 1:N Appointments
   - 1:N ExerciseTasks
-  - 1:N AIAnalysis
+  - 1:N AiChatLogs
+  - 1:N Badges
+  - 1:N PatientMealAssignments
 
 **DietWeeks → DietDays → MealItems Hiyerarşisi:**
 ```
@@ -907,7 +906,7 @@ DietWeeks (Haftalık Plan)
 
 ### 4.2.1 Domain Modülü (Domain)
 
-**Dosya Sayısı:** 19 entity
+**Dosya Sayısı:** 20 entity
 
 **Ana Sınıflar:**
 - `User.cs`: Temel kullanıcı sınıfı
@@ -1965,7 +1964,7 @@ Bu proje süreci, hem teknik yetkinliklerimi hem de süreç yönetimi becerileri
 | Bileşen | Durum | Not |
 |---------|-------|-----|
 | **Giriş Sistemi** | ✅ Çalışıyor | whodenur/12345678 (doktor), ahmetyilmaz/12345678 (hasta) |
-| **Doktor Paneli** | ✅ Çalışıyor | 13 form, tüm özellikler aktif |
+| **Doktor Paneli** | ✅ Çalışıyor | 14 form, tüm özellikler aktif |
 | **Hasta Paneli** | ✅ Çalışıyor | 10 form, tüm özellikler aktif |
 | **AI Entegrasyonu** | ✅ Çalışıyor | Google Gemini API tam entegre, gerçek zamanlı analiz |
 | **Veritabanı** | ✅ Çalışıyor | 18 tablo, tüm ilişkiler aktif |

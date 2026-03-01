@@ -753,7 +753,7 @@ Proje **4 katmanlı mimari** kullanmaktadır:
 └──────────────────────┘
 ```
 
-**Toplam Form:** 23 adet (14 Doktor, 9 Hasta)
+**Toplam Form:** 27 adet (14 Doktor, 10 Hasta, 3 Login)
 
 ---
 
@@ -836,7 +836,7 @@ User ────► Message (1:N) [from/to]
 ## 11. SONUÇ
 
 **Toplam Sınıf Sayısı:** ~70  
-**Domain Models:** 19  
+**Domain Models:** 20  
 **Repositories:** 16  
 **Services:** 11  
 **Forms:** 23  
