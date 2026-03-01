@@ -899,7 +899,7 @@ WHERE PatientId = 1
 ## 10. SONUÇ
 
 **ER Diyagramı Özeti:**
-- ✅ **19 tablo** ile kapsamlı veri modeli
+- ✅ **18 tablo** ile kapsamlı veri modeli
 - ✅ **18 foreign key** ile veri bütünlüğü
 - ✅ **3NF normalizasyon** standardı
 - ✅ **Performans optimizasyonu** için 35+ index

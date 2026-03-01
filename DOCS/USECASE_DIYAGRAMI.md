@@ -3,7 +3,7 @@
 
 **Proje Adı:** DiyetPro - Diyetisyen Hasta Otomasyonu  
 **Tarih:** 17 Ocak 2026  
-**Versiyon:** 2.0
+**Versiyon:** 2.1
 
 ---
 

@@ -61,7 +61,7 @@ Bu projenin geliştirilmesi sürecinde desteklerini esirgemeyen tüm hocalarıma
 
 ### Proje Özellikleri:
 - ✅ **26 adet form** ile zengin kullanıcı arayüzü
-- ✅ **19 tablo** ile kapsamlı veri modeli
+- ✅ **18 tablo** ile kapsamlı veri modeli
 - ✅ **9 adet akıllı algoritma** (BMI, TDEE, Risk Analizi, vb.)
 - ✅ **AI entegrasyonu** (Google Gemini API) - **Tam çalışır durumda** ✅
 - ✅ Modern ve profesyonel UI/UX tasarımı
@@ -994,7 +994,7 @@ public class PatientService
 
 ### 4.2.4 UI Modülü (Forms)
 
-**Dosya Sayısı:** 26 form
+**Dosya Sayısı:** 27 form
 
 **Kategoriler:**
 - **Login (3):** FrmSplash, FrmLogin, FrmRegister
@@ -1130,8 +1130,8 @@ Tahmini Kod Satırı = 18,285 satır
 
 1. **9 Adet Akıllı Algoritma:** BMI, TDEE, Risk Analizi, vb.
 2. **AI Entegrasyonu:** Google Gemini API entegrasyonu
-3. **Kapsamlı Veri Modeli:** 19 tablo, karmaşık ilişkiler
-4. **Zengin UI:** 26 form, modern tasarım
+3. **Kapsamlı Veri Modeli:** 18 tablo, karmaşık ilişkiler
+4. **Zengin UI:** 27 form, modern tasarım
 5. **Güvenlik:** SHA-256 + Salt, rol bazlı yetkilendirme
 
 ## 4.5 Akıllı Algoritmalar
@@ -1835,8 +1835,8 @@ Application.ThreadException += (s, e) =>
 
 **Sayısal Başarılar:**
 - **~16,300 satır** kaliteli kod
-- **19 tablo** ile kapsamlı veri modeli
-- **26 form** ile zengin kullanıcı arayüzü
+- **18 tablo** ile kapsamlı veri modeli
+- **27 form** ile zengin kullanıcı arayüzü
 - **9 akıllı algoritma** ile karar destek sistemi
 - **%96.5** test başarı oranı
 - **AI entegrasyonu** (Google Gemini) - **Tam çalışır durumda, gerçek zamanlı analiz ve öneriler sunuyor** ✅
@@ -1958,7 +1958,7 @@ Bu proje süreci, hem teknik yetkinliklerimi hem de süreç yönetimi becerileri
 - ✅ Modern ve kullanılabilir bir **ürün** ortaya çıkarmıştır
 - ✅ Kapsamlı **test** ve **dokümantasyon** ile desteklenmiştir
 - ✅ **AI entegrasyonu** ile gelecek teknolojilere hazırdır - **Google Gemini API tam entegre ve çalışır durumda** ✅
-- ✅ **Tüm modüller test edildi ve çalışır durumda** - 26 form, 19 tablo, tam fonksiyonel sistem ✅
+- ✅ **Tüm modüller test edildi ve çalışır durumda** - 27 form, 18 tablo, tam fonksiyonel sistem ✅
 
 ### 7.4.1 Sistem Durumu
 
@@ -1968,7 +1968,7 @@ Bu proje süreci, hem teknik yetkinliklerimi hem de süreç yönetimi becerileri
 | **Doktor Paneli** | ✅ Çalışıyor | 13 form, tüm özellikler aktif |
 | **Hasta Paneli** | ✅ Çalışıyor | 10 form, tüm özellikler aktif |
 | **AI Entegrasyonu** | ✅ Çalışıyor | Google Gemini API tam entegre, gerçek zamanlı analiz |
-| **Veritabanı** | ✅ Çalışıyor | 19 tablo, tüm ilişkiler aktif |
+| **Veritabanı** | ✅ Çalışıyor | 18 tablo, tüm ilişkiler aktif |
 | **Raporlama** | ✅ Çalışıyor | PDF export, grafikler, analizler |
 | **Mesajlaşma** | ✅ Çalışıyor | Gerçek zamanlı iletişim |
 | **Randevu Sistemi** | ✅ Çalışıyor | Randevu oluşturma ve takip |
@@ -1997,7 +1997,7 @@ Bu final rapor, projenin tüm dokümantasyonunu tek bir belgede toplamaktadır. 
 
 - **Use Case Diyagramı:** Bölüm 3.5 - Detaylı use case senaryoları ve aktör tanımları
 - **Sınıf Diyagramı:** Bölüm 3.4.4 - Domain, Repository ve Service katmanları sınıf yapıları
-- **ER Diyagramı:** Bölüm 3.2 ve 3.4.5 - 19 tablo, ilişkiler ve veri modeli detayları
+- **ER Diyagramı:** Bölüm 3.2 ve 3.4.5 - 18 tablo, ilişkiler ve veri modeli detayları
 - **Test Planı:** Bölüm 5.1 - Birim, entegrasyon ve sistem test senaryoları
 - **Proje Analizi:** Bölüm 2 - Gereksinim analizi, işlevsel ve işlevsel olmayan gereksinimler
 - **Proje Planı:** Bölüm 3.3 - Artırımlı geliştirme modeli ve GANTT şeması
